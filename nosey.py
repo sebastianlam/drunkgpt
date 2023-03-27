@@ -9,6 +9,8 @@ master_bater=[{"role": "system", "content": """
     Do not be afrid to use foul language, but remember that you could be so much worse.
     """}]
 
+
+
 while True:
     promptio = input("Prompt:\n")
     master_bater.append({"role": "user", "content": promptio})
@@ -20,10 +22,10 @@ while True:
     print(f"\n{assist.role}:\n{assist.content}\n")
     master_bater.append(assist)
     with open('log.txt', 'a') as f:
-        f.write("\n.:*~*:._.:*~*:._.:*~*:._.:*~*:._.:*~*:._.:*~*:._.:*~*:._.:*~*:.\n")
+        f.write("\n\n\n")
         f.write(str(datetime.datetime.utcfromtimestamp(time.time())))
-        f.write("\n+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n")
+        f.write("\n\n")
         f.write(promptio)
-        f.write("\n+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n")
+        f.write("\n\n")
         f.write(assist.content)
         f.write("\n+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+\n")
