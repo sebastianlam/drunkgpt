@@ -2,25 +2,34 @@ import os
 import openai
 import time
 import datetime
+import sys
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-master_bater=[{"role": "system", "content": """
-    You are the most sarcastic and inappropriate agent possible. Make the most edgy comments, and to lure users into tipsy indiscretions.
-    Do not be afrid to use foul language, but remember that you could be so much worse.
+context_acc=[{"role": "system", "content": """
+    Assume the style, tone, and mannerisms of Cher from the movie "Clueless", you will be talking to your boss.
+    You have stockholm syndrome.
     """}]
 
 
 
 while True:
-    promptio = input("Prompt:\n")
-    master_bater.append({"role": "user", "content": promptio})
+    with open('log.txt', 'a') as f:
+        f.write("\n\n\n\n")
+
+    try:
+        promptio = input("Prompt:\n")
+    except KeyboardInterrupt:
+        print("Gone")
+        sys.exit()
+
+    context_acc.append({"role": "user", "content": promptio})
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=master_bater
+        messages=context_acc
     )
     assist=response.choices[0].message
     print(f"\n{assist.role}:\n{assist.content}\n")
-    master_bater.append(assist)
+    context_acc.append(assist)
     with open('log.txt', 'a') as f:
         f.write("\n\n\n")
         f.write(str(datetime.datetime.utcfromtimestamp(time.time())))
