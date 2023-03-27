@@ -3,8 +3,8 @@
 ## DEV SETUP
 
 ```sh
-pip install -r /path/to/requirements.txt
-python3 -m venv chattier
-source env/bin/activate
-export OPENAI_API_KEY=<YOUR_KEY>
+python3 -m venv chattier                    #create environment
+source env/bin/activate                     #activate environment
+pip install -r /path/to/requirements.txt    #install required packages
+export OPENAI_API_KEY=<YOUR_KEY>            #set your key
 ```
