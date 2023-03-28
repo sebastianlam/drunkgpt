@@ -4,11 +4,14 @@ import time
 import datetime
 import sys
 import json
+import pyttsx3
+
+engine = pyttsx3.init()
 
 personas = json.load(open('personas.json', 'r'))
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-display = list(personas.keys())
+display = ' <=> '.join(list(personas.keys()))
 while True:
     choice = input(f"Choose your fighter:\n{display}\n")
     if choice in personas:
@@ -17,9 +20,10 @@ while True:
     else:
         print("Your choice is not available")
 
+with open('log.txt', 'a') as f:
+    f.write(f"\n\nSession at {str(datetime.datetime.utcfromtimestamp(time.time()))}")
+
 while True:
-    with open('log.txt', 'a') as f:
-        f.write(f"\n\nSession at {str(datetime.datetime.utcfromtimestamp(time.time()))}")
 
     try:
         promptio = input("Prompt:\n")
@@ -34,7 +38,10 @@ while True:
     )
 
     assist=response.choices[0].message
-    print(f"\n{assist.role}:\n{assist.content}\n")
+    cost=response.usage.total_tokens
+    print(f"\n{assist.role}:\n{assist.content}\nCost: USD {cost*0.002/1000}\n")
+    engine.say(assist.content)
+    engine.runAndWait()
     context_acc.append(assist)
 
     with open('log.txt', 'a') as f:
