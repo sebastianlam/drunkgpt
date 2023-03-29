@@ -7,11 +7,13 @@ import json
 import pyttsx3
 
 engine = pyttsx3.init()
+rate = engine.getProperty('rate')
+engine.setProperty('rate', rate-30)
 
 personas = json.load(open('personas.json', 'r'))
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# modellist=openai.Model.list()
+model_ls=openai.Model.list()
 
 # with open('models.txt', 'a') as f:
 #     f.write(str(modellist))
@@ -39,7 +41,7 @@ while True:
 
     context_acc.append({"role": "user", "content": promptio})
     response = openai.ChatCompletion.create(
-        model="gpt-4-0314",
+        model="gpt-3.5-turbo",
         messages=context_acc
     )
 
