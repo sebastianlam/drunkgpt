@@ -11,6 +11,12 @@ engine = pyttsx3.init()
 personas = json.load(open('personas.json', 'r'))
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# modellist=openai.Model.list()
+
+# with open('models.txt', 'a') as f:
+#     f.write(str(modellist))
+#     f.write("\n")
+
 display = ' <=> '.join(list(personas.keys()))
 while True:
     choice = input(f"Choose your fighter:\n{display}\n")
@@ -33,7 +39,7 @@ while True:
 
     context_acc.append({"role": "user", "content": promptio})
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4-0314",
         messages=context_acc
     )
 
