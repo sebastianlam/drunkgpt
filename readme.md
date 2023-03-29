@@ -4,12 +4,14 @@
 
 ```sh
 python3 -m venv chattier                    #create environment
-source env/bin/activate                     #activate environment
+source chattier/bin/activate                #activate environment
 pip install -r /path/to/requirements.txt    #install required packages
 export OPENAI_API_KEY=<YOUR_KEY>            #set YOUR OPENAI_API_KEY
 ```
 
 ## FEATURES
+
+### Text to speech with `pyttsx3`
 
 ### Logs with timestamps
 
