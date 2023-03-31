@@ -23,6 +23,27 @@ engine.setProperty('rate', rate-30)
 
 # Voice recognition init
 r = sr.Recognizer()
+def speech_prompt():
+    try:
+        choice = input(f"Would you like to talk? (y/n): \n")
+        if choice == "y":
+            return True
+        else:
+            return False
+    except KeyboardInterrupt:
+        print("\nAuf Wiedersehen!")
+        sys.exit()
+
+def transcribe():
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = r.listen(source)
+    try:
+        print("thinking")
+        return r.recognize_whisper_api(audio, api_key=openai.api_key)
+    except sr.RequestError as e:
+        print("Could not request results from Whisper API")
+        return e
 
 # OpenAI init
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -32,7 +53,21 @@ avail_models = filter(lambda string: ("gpt" in string), model_names)
 print(avail_models)
 
 
-context_arr = []
+def prompting(if_speech, context):
+    if if_speech:
+        try:
+            return transcribe()
+        except KeyboardInterrupt:
+            session_log = {"start": start_time, "end": time_str(), "content": context}
+            json_log(log_file, "chats", session_log, "log")
+            print("\nAuf Wiedersehen!")
+            sys.exit()
+        except sr.RequestError:
+            return input("We can't hear you at the moment, type here instead:\n")
+    else:
+        return input("User:\n")
+
+
 
 def json_log(f_name, key, data, mode):
     match mode:
@@ -46,43 +81,48 @@ def json_log(f_name, key, data, mode):
             with open(f_name, mode, encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
 
-def persona_input(if_keep):
+def persona_input(if_keep, context):
     display = ' | '.join(list(personas.keys()))
     while True:
         try:
             choice = input(f"Choose your fighter:\n{display}\n")
         except KeyboardInterrupt:
-            session_log = {"start": start_time, "end": time_str(), "content": context_arr}
+            session_log = {"start": start_time, "end": time_str(), "content": context}
             json_log(log_file, "chats", session_log, "log")
             print("\nAuf Wiedersehen!")
             sys.exit()
         if choice in personas:
             if if_keep:
-                context_arr[0] = {"role": "system", "content": personas[choice]}
-                return choice
-                break
-            context_arr.append({"role": "system", "content": personas[choice]})
-            return choice
+                try:
+                    context[0] = {"role": "system", "content": personas[choice]}
+                except UnboundLocalError:
+                    print(str(context))
+                    sys.exit()
+            else:
+                context = [{"role": "system", "content": personas[choice]}]
+            return choice, context
             break
         else:
             print("Your choice is not available")
 
 def main():
-    agent = persona_input(False)
+    context_arr = []
+
+    agent, context_arr = persona_input(False, context_arr)
+    voice_opt = speech_prompt()
     while True:
         try:
-            promptio = input("User:\n")
+            promptio = prompting(voice_opt, context_arr)
         except KeyboardInterrupt:
             session_log = {"start": start_time, "end": time_str(), "content": context_arr}
             json_log(log_file, "chats", session_log, "log")
             print("\nAuf Wiedersehen!")
             sys.exit()
-        
         if promptio == "new":
-            agent = persona_input(False)
+            agent, context_arr = persona_input(False, context_arr)
             continue
         if promptio == "switch":
-            agent = persona_input(True)
+            agent, context_arr = persona_input(True, context_arr)
             continue
 
         context_arr.append({"role": "user", "content": promptio})
@@ -97,14 +137,5 @@ def main():
         engine.say(assist.content)
         engine.runAndWait()
         context_arr.append(assist)
-
-        with open('log.txt', 'a') as f:
-            f.write("\n\n")
-            f.write(time_str())
-            f.write("\n\n")
-            f.write(promptio)
-            f.write("\n\n")
-            f.write(assist.content)
-            f.write("\n\n")
 
 main()

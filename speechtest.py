@@ -8,9 +8,8 @@ r = sr.Recognizer()
 
 def transcribe():
     with sr.Microphone() as source:
-        print("Say something!")
+        print("Listening...")
         audio = r.listen(source)
-
     try:
         return r.recognize_whisper_api(audio, api_key=openai.api_key)
     except sr.RequestError as e:
