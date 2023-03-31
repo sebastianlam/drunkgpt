@@ -1,3 +1,4 @@
+import io
 import os
 import openai
 import time
@@ -53,10 +54,21 @@ avail_models = filter(lambda string: ("gpt" in string), model_names)
 print(avail_models)
 
 
+def startupCheck():
+    if os.path.isfile(model_log) and os.access(model_log, os.R_OK):
+        # checks if file exists
+        print ("File exists and is readable")
+    else:
+        print ("Either file is missing or is not readable, creating file...")
+        with io.open(os.path.join(model_log, 'Accounts.json'), 'w') as db_file:
+            db_file.write(json.dumps({"chats": []}))
+
 def prompting(if_speech, context):
     if if_speech:
         try:
-            return transcribe()
+            scribble = transcribe()
+            print("\033[3m{}\033[0m".format(scribble), "\n")
+            return scribble
         except KeyboardInterrupt:
             session_log = {"start": start_time, "end": time_str(), "content": context}
             json_log(log_file, "chats", session_log, "log")
@@ -66,7 +78,6 @@ def prompting(if_speech, context):
             return input("We can't hear you at the moment, type here instead:\n")
     else:
         return input("User:\n")
-
 
 
 def json_log(f_name, key, data, mode):
@@ -105,7 +116,11 @@ def persona_input(if_keep, context):
         else:
             print("Your choice is not available")
 
+# # # #
+
 def main():
+    startupCheck()
+
     context_arr = []
 
     agent, context_arr = persona_input(False, context_arr)
