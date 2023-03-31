@@ -1,5 +1,11 @@
 # CHAT SCRIPT BIOLERPLATE
 
+## GLOBAL DEPENDENCIES
+
+```sh
+brew install portaudio
+```
+
 ## DEV SETUP
 
 ```sh

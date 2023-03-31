@@ -88,7 +88,7 @@ def main():
 
         assist=response.choices[0].message
         cost=response.usage.total_tokens
-        print(f"\n{assist.role}:\n{assist.content}\nCost: USD {cost*0.002/1000}\n")
+        print(f"\n{agent}:\n{assist.content}\nCost: USD {cost*0.002/1000}\n")
         engine.say(assist.content)
         engine.runAndWait()
         context_arr.append(assist)
