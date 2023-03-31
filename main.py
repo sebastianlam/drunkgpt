@@ -5,27 +5,32 @@ import datetime
 import sys
 import json
 import pyttsx3
+import speech_recognition as sr
 
 def time_str():
     return str(datetime.datetime.utcfromtimestamp(time.time()))
-
 start_time = time_str()
 
+# Resource gathering
 log_file = "log.json"
 model_log = "models.json"
 personas = json.load(open('personas.json', 'r'))
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
-
+# Text to speech settings
 engine = pyttsx3.init()
 rate = engine.getProperty('rate')
 engine.setProperty('rate', rate-30)
 
+# Voice recognition init
+r = sr.Recognizer()
+
+# OpenAI init
+openai.api_key = os.getenv("OPENAI_API_KEY")
 model_ls=openai.Model.list()
 model_names = [d["id"] for d in model_ls if "id" in d]
-
 avail_models = filter(lambda string: ("gpt" in string), model_names)
 print(avail_models)
+
 
 context_arr = []
 
