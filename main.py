@@ -55,12 +55,12 @@ print(str(avail_models))
 
 
 def startupCheck():
-    if os.path.isfile(model_log) and os.access(model_log, os.R_OK):
+    if os.path.isfile(log_file) and os.access(log_file, os.R_OK):
         # checks if file exists
         print ("File exists and is readable")
     else:
         print ("Either file is missing or is not readable, creating file...")
-        with io.open(os.path.join(model_log, 'Accounts.json'), 'w') as db_file:
+        with io.open(os.path.join(".", log_file), 'w') as db_file:
             db_file.write(json.dumps({"chats": []}))
 
 def prompting(if_speech, context):
