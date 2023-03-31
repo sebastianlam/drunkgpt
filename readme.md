@@ -13,13 +13,18 @@ python3 -m venv chattier                    #create environment
 source chattier/bin/activate                #activate environment
 pip install -r requirements.txt             #install required packages (still using pip freeze > requirements.txt)
 export OPENAI_API_KEY=<YOUR_KEY>            #set YOUR OPENAI_API_KEY
+python3 main.py
 ```
 
 ## FEATURES
 
-### Text to speech with `pyttsx3`
+### Persona/purpose selector
 
-### Logs with timestamps
+### Speech input with **`Wisper`**
+
+### Text to speech with **`pyttsx3`**
+
+### `JSON` Logs
 
 ### Drunk personality
 

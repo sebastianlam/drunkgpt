@@ -20,7 +20,7 @@ personas = json.load(open('personas.json', 'r'))
 # Text to speech settings
 engine = pyttsx3.init()
 rate = engine.getProperty('rate')
-engine.setProperty('rate', rate-30)
+engine.setProperty('rate', rate)
 
 # Voice recognition init
 r = sr.Recognizer()
@@ -110,6 +110,8 @@ def persona_input(if_keep, context):
                     print(str(context))
                     sys.exit()
             else:
+                session_log = {"start": start_time, "end": time_str(), "content": context}
+                json_log(log_file, "chats", session_log, "log")
                 context = [{"role": "system", "content": personas[choice]}]
             return choice, context
             break
