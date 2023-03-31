@@ -51,7 +51,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 model_ls=openai.Model.list()
 model_names = [d["id"] for d in model_ls if "id" in d]
 avail_models = filter(lambda string: ("gpt" in string), model_names)
-print(avail_models)
+print(str(avail_models))
 
 
 def startupCheck():
