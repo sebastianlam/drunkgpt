@@ -6,6 +6,11 @@ import sys
 import json
 import pyttsx3
 
+def time_str():
+    return str(datetime.datetime.utcfromtimestamp(time.time()))
+
+start_time = time_str()
+
 log_file = "log.json"
 model_log = "models.json"
 personas = json.load(open('personas.json', 'r'))
@@ -29,15 +34,12 @@ def json_log(f_name, key, data, mode):
         case "log":
             with open(f_name, "r") as jsonFile:
                 old_data = json.load(jsonFile)
-            old_data[key] = data
+            old_data[key].append(data)
             with open(f_name, "w") as jsonFile:
                 json.dump(old_data, jsonFile)
         case "overwrite":
             with open(f_name, mode, encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
-
-def time_str():
-    return str(datetime.datetime.utcfromtimestamp(time.time()))
 
 def persona_input(if_keep):
     display = ' | '.join(list(personas.keys()))
@@ -45,28 +47,38 @@ def persona_input(if_keep):
         try:
             choice = input(f"Choose your fighter:\n{display}\n")
         except KeyboardInterrupt:
+            session_log = {"start": start_time, "end": time_str(), "content": context_arr}
+            json_log(log_file, "chats", session_log, "log")
             print("\nAuf Wiedersehen!")
             sys.exit()
         if choice in personas:
             if if_keep:
                 context_arr[0] = {"role": "system", "content": personas[choice]}
+                return choice
                 break
             context_arr.append({"role": "system", "content": personas[choice]})
+            return choice
             break
         else:
             print("Your choice is not available")
 
-with open('log.txt', 'a') as f:
-    f.write(f"\n\nSession at {time_str()}")
-
 def main():
+    agent = persona_input(False)
     while True:
-
         try:
-            promptio = input("Prompt:\n")
+            promptio = input("User:\n")
         except KeyboardInterrupt:
+            session_log = {"start": start_time, "end": time_str(), "content": context_arr}
+            json_log(log_file, "chats", session_log, "log")
             print("\nAuf Wiedersehen!")
             sys.exit()
+        
+        if promptio == "new":
+            agent = persona_input(False)
+            continue
+        if promptio == "switch":
+            agent = persona_input(True)
+            continue
 
         context_arr.append({"role": "user", "content": promptio})
         response = openai.ChatCompletion.create(
