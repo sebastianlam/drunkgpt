@@ -32,11 +32,11 @@ context_arr = []
 def json_log(f_name, key, data, mode):
     match mode:
         case "log":
-            with open(f_name, "r") as jsonFile:
+            with open(f_name, "r", encoding='utf-8') as jsonFile:
                 old_data = json.load(jsonFile)
             old_data[key].append(data)
             with open(f_name, "w") as jsonFile:
-                json.dump(old_data, jsonFile)
+                json.dump(old_data, jsonFile, ensure_ascii=False, indent=4)
         case "overwrite":
             with open(f_name, mode, encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
