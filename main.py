@@ -115,7 +115,7 @@ def persona_input(if_init, context):
         if choice in personas:
             if if_init:
                 try:
-                    context[0] = {"role": "system", "content": personas[choice]}
+                    context = [{"role": "system", "content": personas[choice]}]
                 except UnboundLocalError:
                     print(str(context))
                     sys.exit()
