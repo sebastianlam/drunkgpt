@@ -8,16 +8,6 @@ import json
 import pyttsx3
 import speech_recognition as sr
 
-
-start_tone = "start.mp3"
-end_tone = "end.mp3"
-def tone(case):
-    match case:
-        case "start":
-            os.system("afplay " + start_tone)
-        case "end":
-            os.system("afplay " + start_tone)
-
 def time_str():
     return str(datetime.datetime.utcfromtimestamp(time.time()))
 start_time = time_str()
@@ -34,13 +24,11 @@ engine.setProperty('rate', rate)
 
 # Voice recognition init
 r = sr.Recognizer()
+
 def speech_prompt():
     try:
-        choice = input(f"Would you like to talk? (y/n): \n")
-        if choice == "y":
-            return True
-        else:
-            return False
+        choice = input("Would you like to talk? (y/n): ")
+        return choice.lower() == "y"
     except KeyboardInterrupt:
         print("\nAuf Wiedersehen!")
         sys.exit()
@@ -57,12 +45,14 @@ def transcribe():
         return e
 
 # OpenAI init
-openai.api_key = os.getenv("OPENAI_API_KEY")
-model_ls=openai.Model.list()
-model_names = [d["id"] for d in model_ls if "id" in d]
-avail_models = filter(lambda string: ("gpt" in string), model_names)
-print(str(avail_models))
 
+openai.api_key = os.getenv("OPENAI_API_KEY")
+model_ls = openai.Model.list()
+model_names = [d["id"] for d in model_ls if "id" in d]
+avail_models = filter(lambda string: "gpt" in string, model_names)
+model_str = ", ".join(list(avail_models))
+
+print(model_str)
 
 def startupCheck():
     if os.path.isfile(log_file) and os.access(log_file, os.R_OK):
