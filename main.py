@@ -8,6 +8,16 @@ import json
 import pyttsx3
 import speech_recognition as sr
 
+
+start_tone = "start.mp3"
+end_tone = "end.mp3"
+def tone(case):
+    match case:
+        case "start":
+            os.system("afplay " + start_tone)
+        case "end":
+            os.system("afplay " + start_tone)
+
 def time_str():
     return str(datetime.datetime.utcfromtimestamp(time.time()))
 start_time = time_str()
@@ -77,7 +87,7 @@ def prompting(if_speech, context):
         except sr.RequestError:
             return input("We can't hear you at the moment, type here instead:\n")
     else:
-        return input("User:\n")
+        return input("User (type \"new\" for session change):\n")
 
 
 def json_log(f_name, key, data, mode):
@@ -92,7 +102,7 @@ def json_log(f_name, key, data, mode):
             with open(f_name, mode, encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
 
-def persona_input(if_keep, context):
+def persona_input(if_init, context):
     display = ' | '.join(list(personas.keys()))
     while True:
         try:
@@ -103,7 +113,7 @@ def persona_input(if_keep, context):
             print("\nAuf Wiedersehen!")
             sys.exit()
         if choice in personas:
-            if if_keep:
+            if if_init:
                 try:
                     context[0] = {"role": "system", "content": personas[choice]}
                 except UnboundLocalError:
@@ -125,7 +135,7 @@ def main():
 
     context_arr = []
 
-    agent, context_arr = persona_input(False, context_arr)
+    agent, context_arr = persona_input(True, context_arr)
     voice_opt = speech_prompt()
     while True:
         try:
@@ -137,9 +147,6 @@ def main():
             sys.exit()
         if promptio == "new":
             agent, context_arr = persona_input(False, context_arr)
-            continue
-        if promptio == "switch":
-            agent, context_arr = persona_input(True, context_arr)
             continue
 
         context_arr.append({"role": "user", "content": promptio})

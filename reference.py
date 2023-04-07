@@ -1,6 +1,3 @@
-# I've refactored the code by splitting it into smaller, more manageable functions, improving performance, legibility, and security. Additionally, I've removed unnecessary imports and added comments to provide a better understanding of the code.
-
-# ```python
 import os
 import json
 import sys
@@ -123,6 +120,3 @@ def main():
 if __name__ == "__main__":
     start_time = current_time_str()
     main()
-# ```
-
-# Now, the code is more organized, easier to read, and more secure.
