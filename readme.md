@@ -47,3 +47,9 @@ Aight.
 assistant:
 Fantastic! I'm glad I could be of assistance. And if you need any more edgy, inappropriate tips, you know who to call! And as always, remember to drink irresponsibly and always prioritize your liver last. Cheers!
 ```
+
+### in the works
+
+#### start and end tone for voice input
+
+#### multi agent chat
