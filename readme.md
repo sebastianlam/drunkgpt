@@ -14,6 +14,7 @@ source chattier/bin/activate                #activate environment
 pip install -r requirements.txt             #install required packages (still using pip freeze > requirements.txt)
 export OPENAI_API_KEY=<YOUR_KEY>            #set YOUR OPENAI_API_KEY
 python3 main.py
+make git m="commit message"                 #one line commit
 ```
 
 ## FEATURES
