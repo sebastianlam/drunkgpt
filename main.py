@@ -47,9 +47,59 @@ def time_str():
     return str(datetime.datetime.utcnow())
 
 
+def startupCheck():
+    if os.path.isfile(LOG_FILE) and os.access(LOG_FILE, os.R_OK):
+        # checks if file exists
+        print ("Log loaded.")
+    else:
+        print ("Either file is missing or is not readable, creating file...")
+        with io.open(os.path.join(".", LOG_FILE), 'w') as db_file:
+            db_file.write(json.dumps({"chats": []}))
+
+
+def json_log(f_name, key, data):
+    with open(f_name, "r", encoding='utf-8') as jsonFile:
+        old_data = json.load(jsonFile)
+    old_data[key].append(data)
+    with open(f_name, "w") as jsonFile:
+        json.dump(old_data, jsonFile, ensure_ascii=False, indent=4)
+
+
+def session_log(context, init_time, model, if_end):
+    log_content = {"start": init_time, "end": time_str(), "model": model, "content": context}
+    json_log(LOG_FILE, "chats", log_content)
+    if if_end:
+        print("\nAuf Wiedersehen!")
+        sys.exit()
+
+
 def talk(string):
     engine.say(string)
     engine.runAndWait()
+
+
+def transcribe():
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = r.listen(source, timeout=r.operation_timeout)
+    try:
+        print("thinking")
+        return r.recognize_whisper_api(audio, api_key=openai.api_key)
+    except sr.RequestError as e:
+        print("Could not request results from Whisper API")
+        return e
+    except sr.WaitTimeoutError as e:
+        print("Timeout error: " + str(e))
+        return e
+
+
+def speech_prompt():
+    try:
+        choice = input("Would you like to talk? (y/n): ")
+        return choice.lower() == "y"
+    except KeyboardInterrupt:
+        print("\nAuf Wiedersehen!")
+        sys.exit()
 
 
 def model_prompt(models):
@@ -70,69 +120,6 @@ def model_prompt(models):
             print("Your choice is not available")
 
 
-def json_log(f_name, key, data):
-    with open(f_name, "r", encoding='utf-8') as jsonFile:
-        old_data = json.load(jsonFile)
-    old_data[key].append(data)
-    with open(f_name, "w") as jsonFile:
-        json.dump(old_data, jsonFile, ensure_ascii=False, indent=4)
-
-
-def session_log(context, init_time, model, if_end):
-    log_content = {"start": init_time, "end": time_str(), "model": model, "content": context}
-    json_log(LOG_FILE, "chats", log_content)
-    if if_end:
-        print("\nAuf Wiedersehen!")
-        sys.exit()
-
-
-def transcribe():
-    with sr.Microphone() as source:
-        print("Listening...")
-        audio = r.listen(source, timeout=r.operation_timeout)
-    try:
-        print("thinking")
-        return r.recognize_whisper_api(audio, api_key=openai.api_key)
-    except sr.RequestError as e:
-        print("Could not request results from Whisper API")
-        return e
-    except sr.WaitTimeoutError as e:
-        print("Timeout error: " + str(e))
-        return e
-        
-
-def speech_prompt():
-    try:
-        choice = input("Would you like to talk? (y/n): ")
-        return choice.lower() == "y"
-    except KeyboardInterrupt:
-        print("\nAuf Wiedersehen!")
-        sys.exit()
-
-
-def startupCheck():
-    if os.path.isfile(LOG_FILE) and os.access(LOG_FILE, os.R_OK):
-        # checks if file exists
-        print ("Log loaded.")
-    else:
-        print ("Either file is missing or is not readable, creating file...")
-        with io.open(os.path.join(".", LOG_FILE), 'w') as db_file:
-            db_file.write(json.dumps({"chats": []}))
-
-
-def prompting(if_speech, context):
-    if if_speech:
-        try:
-            preview = transcribe()
-            talk("hmm...")
-            print("\033[3m{}\033[0m".format(preview), "\n")
-            return preview
-        except sr.RequestError:
-            return input("We can't hear you at the moment, type here instead:\n")
-    else:
-        return input("User:\n")
-
-
 def persona_input(options, if_continue, context, time, model):
     display = "\n".join([*['(' + str(k) + ') ' + str(v) for k,v in options.items()]])
     while True:
@@ -151,6 +138,19 @@ def persona_input(options, if_continue, context, time, model):
             return options[choice], context
         else:
             print("Your choice is not available")
+
+
+def prompting(if_speech, context):
+    if if_speech:
+        try:
+            preview = transcribe()
+            talk("hmm...")
+            print("\033[3m{}\033[0m".format(preview), "\n")
+            return preview
+        except sr.RequestError:
+            return input("We can't hear you at the moment, type here instead:\n")
+    else:
+        return input("User:\n")
 
 
 ####################################################################################################
@@ -174,6 +174,9 @@ def main():
         if promptio.lower() == "new":
             agent, context_arr = persona_input(persona_display, True, context_arr, start_time, MODEL_ID)
             start_time = time_str()
+            continue
+        if promptio.lower() == "":
+            print("Give me something mate.")
             continue
         context_arr.append({"role": "user", "content": promptio})
         response = openai.ChatCompletion.create(
