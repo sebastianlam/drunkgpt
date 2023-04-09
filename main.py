@@ -43,6 +43,10 @@ r = sr.Recognizer()
 r.operation_timeout = 5
 
 
+def time_str():
+    return str(datetime.datetime.utcnow())
+
+
 def talk(string):
     engine.say(string)
     engine.runAndWait()
