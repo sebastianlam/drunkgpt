@@ -10,12 +10,23 @@ brew install portaudio
 
 NOTE: Early adopters will have to `pip uninstall pyttsx3`, and redo `pip install -r requirements.txt` to replace a broken package with its functional fork.
 
+### INITIAL INSTALLATION
+
 ```sh
 python3 -m venv chattier                    #create environment
 source chattier/bin/activate                #activate environment
 pip install -r requirements.txt             #install required packages (still using pip freeze > requirements.txt)
 export OPENAI_API_KEY=<YOUR_KEY>            #set YOUR OPENAI_API_KEY
 python3 main.py
+```
+
+### SUBSEQUENT DEVELOPMENT
+
+```sh
+git pull
+source chattier/bin/activate                #activate environment
+pip install -r requirements.txt             #install required packages (still using pip freeze > requirements.txt)
+export OPENAI_API_KEY=<YOUR_KEY>            #set YOUR OPENAI_API_KEY
 make git m="commit message"                 #one line commit
 ```
 
