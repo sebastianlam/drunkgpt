@@ -4,6 +4,6 @@ git:
 		git push -u origin master 
 
 resume:
-		git pull
-		source chattier/bin/activate
-		pip install -r requirements.txt
+		(git pull)
+		(source chattier/bin/activate)
+		(pip install -r requirements.txt)
