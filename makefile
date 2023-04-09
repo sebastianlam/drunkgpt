@@ -40,7 +40,7 @@ git:
 	) 
 
 resume:
-	( \
+	. chattier/bin/activate && ( \
 		git pull; \
 		source chattier/bin/activate; \
 		pip install -r requirements.txt; \
