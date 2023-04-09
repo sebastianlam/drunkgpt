@@ -10,6 +10,7 @@ import speech_recognition as sr
 def time_str():
     return str(datetime.datetime.utcnow())
 
+
 # Resource gathering
 log_file = "log.json"
 model_log = "models.json"
@@ -53,8 +54,12 @@ def json_log(f_name, key, data):
     with open(f_name, "w") as jsonFile:
         json.dump(old_data, jsonFile, ensure_ascii=False, indent=4)
 
-def session_log(context, init_time):
-    print("wip")
+def session_log(context, init_time, model, if_end):
+    log_content = {"start": init_time, "end": time_str(), "model": model, "content": context}
+    json_log(log_file, "chats", log_content)
+    if if_end:
+        print("\nAuf Wiedersehen!")
+        sys.exit()
 
 # Text to speech settings
 engine = pyttsx3.init()
@@ -106,31 +111,22 @@ def prompting(if_speech, context):
             preview = transcribe()
             print("\033[3m{}\033[0m".format(preview), "\n")
             return preview
-        except KeyboardInterrupt:
-            log_content = {"start": start_time, "end": time_str(), "content": context}
-            json_log(log_file, "chats", log_content)
-            print("\nAuf Wiedersehen!")
-            sys.exit()
         except sr.RequestError:
             return input("We can't hear you at the moment, type here instead:\n")
     else:
         return input("User:\n")
 
 
-def persona_input(options, if_continue, context):
+def persona_input(options, if_continue, context, time, model):
     display = "\n".join([*['(' + str(k) + ') ' + str(v) for k,v in options.items()]])
     while True:
         try:
             choice = int(input(f"Choose your fighter:\n{display}\n"))
         except KeyboardInterrupt:
-            log_content = {"start": start_time, "end": time_str(), "content": context}
-            json_log(log_file, "chats", log_content)
-            print("\nAuf Wiedersehen!")
-            sys.exit()
+            session_log(context, time, model, True)
         if choice in options:
             if if_continue:
-                log_content = {"start": start_time, "end": time_str(), "content": context}
-                json_log(log_file, "chats", log_content)
+                session_log(context, time, model, False)
             context = [{"role": "system", "content": personas[options[choice]]}]
             return choice, context
         else:
@@ -144,19 +140,16 @@ def main():
     context_arr = []
     voice_opt = speech_prompt()
     MODEL_ID = model_prompt(model_display)
-    agent, context_arr = persona_input(persona_display, False, context_arr)
+    agent, context_arr = persona_input(persona_display, False, context_arr, start_time, MODEL_ID)
     print("(input \"new\" for session change)")
 
     while True:
         try:
             promptio = prompting(voice_opt, context_arr)
         except KeyboardInterrupt:
-            log_content = {"start": start_time, "end": time_str(), "model": MODEL_ID, "content": context_arr}
-            json_log(log_file, "chats", log_content)
-            print("\nAuf Wiedersehen!")
-            sys.exit()
+            session_log(context_arr, start_time, MODEL_ID, True)
         if promptio.lower() == "new":
-            agent, context_arr = persona_input(persona_display, True, context_arr)
+            agent, context_arr = persona_input(persona_display, True, context_arr, start_time, MODEL_ID)
             start_time = time_str()
             continue
 
