@@ -7,31 +7,46 @@ import json
 import pyttsx3
 import speech_recognition as sr
 
-def time_str():
-    return str(datetime.datetime.utcnow())
+print("Initialising...")
 
+# Constants and configurations
+LOG_FILE = "log.json"
+PERSONAS_FILE = "personas.json"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Resource gathering
-log_file = "log.json"
-model_log = "models.json"
-personas = json.load(open('personas.json', 'r'))
+# Load personas
+personas = json.load(open(PERSONAS_FILE, 'r'))
 persona_options = list(personas.keys())
 persona_display = dict(enumerate(persona_options, 1))
-print(persona_display)
-
 
 # OpenAI init
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = OPENAI_API_KEY
 model_ls = openai.Model.list()
 
+# Load available models
 model_names = [d["id"] for d in model_ls["data"] if "id" in d]
 gpt_options = filter(lambda string: "gpt" in string, model_names)
 model_str = list(gpt_options)
 model_display = dict(enumerate(model_str, 1))
-print(model_display)
 
 # avail_details = [d for d in model_ls["data"] if d["id"] in model_str]
 # print(avail_details)
+
+# Text to speech settings
+engine = pyttsx3.init()
+rate = engine.getProperty('rate')
+engine.setProperty('rate', rate)
+
+
+# Voice recognition init
+r = sr.Recognizer()
+r.operation_timeout = 5
+
+
+def talk(string):
+    engine.say(string)
+    engine.runAndWait()
+
 
 def model_prompt(models):
     display = "\n".join([*['(' + str(k) + ') ' + str(v) for k,v in models.items()]])
@@ -42,6 +57,7 @@ def model_prompt(models):
             print("\nAuf Wiedersehen!")
             sys.exit()
         if choice in models:
+            print(f"You have chosen {models[choice]}")
             return models[choice]
         else:
             print("Your choice is not available")
@@ -54,24 +70,14 @@ def json_log(f_name, key, data):
     with open(f_name, "w") as jsonFile:
         json.dump(old_data, jsonFile, ensure_ascii=False, indent=4)
 
+
 def session_log(context, init_time, model, if_end):
     log_content = {"start": init_time, "end": time_str(), "model": model, "content": context}
-    json_log(log_file, "chats", log_content)
+    json_log(LOG_FILE, "chats", log_content)
     if if_end:
         print("\nAuf Wiedersehen!")
         sys.exit()
 
-# Text to speech settings
-engine = pyttsx3.init()
-rate = engine.getProperty('rate')
-engine.setProperty('rate', rate)
-def talk(string):
-    engine.say(string)
-    engine.runAndWait()
-
-# Voice recognition init
-r = sr.Recognizer()
-r.operation_timeout = 5
 
 def transcribe():
     with sr.Microphone() as source:
@@ -86,6 +92,7 @@ def transcribe():
     except sr.WaitTimeoutError as e:
         print("Timeout error: " + str(e))
         return e
+        
 
 def speech_prompt():
     try:
@@ -95,13 +102,14 @@ def speech_prompt():
         print("\nAuf Wiedersehen!")
         sys.exit()
 
+
 def startupCheck():
-    if os.path.isfile(log_file) and os.access(log_file, os.R_OK):
+    if os.path.isfile(LOG_FILE) and os.access(LOG_FILE, os.R_OK):
         # checks if file exists
-        print ("File exists and is readable")
+        print ("Log loaded.")
     else:
         print ("Either file is missing or is not readable, creating file...")
-        with io.open(os.path.join(".", log_file), 'w') as db_file:
+        with io.open(os.path.join(".", LOG_FILE), 'w') as db_file:
             db_file.write(json.dumps({"chats": []}))
 
 
@@ -128,13 +136,17 @@ def persona_input(options, if_continue, context, time, model):
             if if_continue:
                 session_log(context, time, model, False)
             context = [{"role": "system", "content": personas[options[choice]]}]
+            print(f"You have chosen {options[choice]}")
             return options[choice], context
         else:
             print("Your choice is not available")
 
-# # # #
+
+####################################################################################################
+
 
 def main():
+    
     start_time = time_str()
     startupCheck()
     context_arr = []
