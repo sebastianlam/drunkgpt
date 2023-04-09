@@ -8,7 +8,7 @@ brew install portaudio
 
 ## DEV SETUP
 
-NOTE: Early adopters will have to `pip uninstall pyttsx3`, and redo `pip install -r requirements.txt` to replace a broken package with a functional fork.
+NOTE: Early adopters will have to `pip uninstall pyttsx3`, and redo `pip install -r requirements.txt` to replace a broken package with its functional fork.
 
 ```sh
 python3 -m venv chattier                    #create environment
