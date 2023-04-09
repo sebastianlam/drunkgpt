@@ -175,9 +175,12 @@ def main():
             messages=context_arr
         )
 
-        assist=response.choices[0].message
-        cost=response.usage.total_tokens
-        print(f"\n{agent}:\n{assist.content}\nCost: {cost}\n")
+        print(response)
+
+        assist = response.choices[0].message
+        cost = response.usage
+        cost_display = "  ".join([*['(' + str(k) + ') ' + str(v) for k,v in cost.items()]])
+        print(f"\n{agent}:\n{assist.content}\n{cost_display}\n")
         talk(assist.content)
         context_arr.append(assist)
 
