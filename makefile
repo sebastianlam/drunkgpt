@@ -4,6 +4,10 @@ all: install run
 
 install: venv
 	: # Activate venv and install smthing inside
+	( \
+		pip install --upgrade pip; \
+		pip --version; \
+	)
 	. chattier/bin/activate && pip install -r requirements.txt
 	: # Other commands here
 
@@ -25,15 +29,19 @@ run:
 	)
 
 clean:
-		rm -rf chattier
-		find -iname "*.pyc" -delete
+	rm -rf chattier
+	find -iname "*.pyc" -delete
 
 git:
-		git add .
-		git commit -m "$m"	
-		git push -u origin master 
+	( \
+		git add .; \
+		git commit -m "$m"; \
+		git push -u origin master; \
+	) 
 
 resume:
-		(git pull)
-		(source chattier/bin/activate)
-		(pip install -r requirements.txt)
+	( \
+		git pull; \
+		source chattier/bin/activate; \
+		pip install -r requirements.txt; \
+	)
