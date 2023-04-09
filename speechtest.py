@@ -1,6 +1,7 @@
 import os
 import openai
 import speech_recognition as sr
+import pyttsx3
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -19,5 +20,16 @@ def transcribe():
         print("Could not request results from Whisper API")
 
 result = transcribe()
+
+
+engine = pyttsx3.init()
+voices = engine.getProperty('voices')
+for voice in voices:
+    print(voice, voice.id)
+    engine.setProperty('voice', voice.id)
+    engine.say("Hello World!")
+    engine.runAndWait()
+    engine.stop()
+
 
 print(result)

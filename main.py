@@ -57,6 +57,9 @@ def model_prompt(models):
     while True:
         try:
             choice = int(input(f"Choose your model:\n{display}\n"))
+        except ValueError:
+            print("Type the corresponding number please.")
+            continue
         except KeyboardInterrupt:
             print("\nAuf Wiedersehen!")
             sys.exit()
@@ -121,6 +124,7 @@ def prompting(if_speech, context):
     if if_speech:
         try:
             preview = transcribe()
+            talk("hmm...")
             print("\033[3m{}\033[0m".format(preview), "\n")
             return preview
         except sr.RequestError:
@@ -134,6 +138,9 @@ def persona_input(options, if_continue, context, time, model):
     while True:
         try:
             choice = int(input(f"Choose your fighter:\n{display}\n"))
+        except ValueError:
+            print("Type the corresponding number please.")
+            continue
         except KeyboardInterrupt:
             session_log(context, time, model, True)
         if choice in options:
@@ -168,14 +175,13 @@ def main():
             agent, context_arr = persona_input(persona_display, True, context_arr, start_time, MODEL_ID)
             start_time = time_str()
             continue
-
         context_arr.append({"role": "user", "content": promptio})
         response = openai.ChatCompletion.create(
             model=MODEL_ID,
             messages=context_arr
         )
 
-        print(response)
+        # print(response)
 
         assist = response.choices[0].message
         cost = response.usage
