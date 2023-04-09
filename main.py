@@ -6,6 +6,11 @@ import sys
 import json
 import pyttsx3
 import speech_recognition as sr
+from playsound import playsound
+
+
+playsound('audio/sniper.mp3')
+
 
 print("Initialising...")
 
@@ -80,9 +85,11 @@ def talk(string):
 
 def transcribe():
     with sr.Microphone() as source:
+        playsound('audio/start.mp3')
         print("Listening...")
         audio = r.listen(source, timeout=r.operation_timeout)
     try:
+        playsound('audio/end.mp3')
         print("thinking")
         return r.recognize_whisper_api(audio, api_key=openai.api_key)
     except sr.RequestError as e:
@@ -190,7 +197,10 @@ def main():
         cost = response.usage
         cost_display = "  ".join([*['(' + str(k) + ') ' + str(v) for k,v in cost.items()]])
         print(f"\n{agent}:\n{assist.content}\n{cost_display}\n")
-        talk(assist.content)
         context_arr.append(assist)
+        try:
+            talk(assist.content)
+        except KeyboardInterrupt:
+            session_log(context_arr, start_time, MODEL_ID, True)
 
 main()
