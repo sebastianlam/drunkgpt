@@ -128,7 +128,7 @@ def persona_input(options, if_continue, context, time, model):
             if if_continue:
                 session_log(context, time, model, False)
             context = [{"role": "system", "content": personas[options[choice]]}]
-            return choice, context
+            return options[choice], context
         else:
             print("Your choice is not available")
 
