@@ -32,11 +32,11 @@ make git m="commit message"                 #one line commit
 
 ## FEATURES
 
-### Persona/purpose selector
+### Persona/bot selector
 
-### Speech input with **`Wisper`**
+### Speech recognition with **`Wisper`**
 
-### Text to speech with **`pyttsx3`**
+### Text to speech with `py3-tts` ~~**`pyttsx3`**~~
 
 ### `JSON` Logs
 
