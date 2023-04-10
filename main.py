@@ -79,10 +79,10 @@ def json_log(f_name, key, data):
         json.dump(old_data, jsonFile, ensure_ascii=False, indent=4)
 
 
-def session_log(context, init_time, model, if_end):
+def session_log(context, init_time, model, is_end):
     log_content = {"start": init_time, "end": time_str(), "model": model, "content": context}
     json_log(LOG_FILE, "chats", log_content)
-    if if_end:
+    if is_end:
         print("\nAuf Wiedersehen!")
         sys.exit()
 
@@ -136,7 +136,7 @@ def model_prompt(models):
             print("Your choice is not available")
 
 
-def persona_input(options, if_continue, context, time, model):
+def persona_input(options, is_continue, context, time, model):
     display = "\n".join([*['(' + str(k) + ') ' + str(v) for k,v in options.items()]])
     while True:
         try:
@@ -147,7 +147,7 @@ def persona_input(options, if_continue, context, time, model):
         except KeyboardInterrupt:
             session_log(context, time, model, True)
         if choice in options:
-            if if_continue:
+            if is_continue:
                 session_log(context, time, model, False)
             context = [{"role": "system", "content": personas[options[choice]]}]
             print(f"You have chosen {options[choice]}")
@@ -156,8 +156,8 @@ def persona_input(options, if_continue, context, time, model):
             print("Your choice is not available")
 
 
-def prompting(if_speech, context):
-    if if_speech:
+def prompting(is_speech, context):
+    if is_speech:
         try:
             preview = transcribe()
             talk("hmm...")
