@@ -10,6 +10,10 @@ from playsound import playsound
 import sys
 
 
+playsound("audio/sniper.mp3")
+print("Initialising...")
+
+
 def get_base_prefix_compat():
     """Get base/real prefix, or sys.prefix if there is none."""
     return (
@@ -19,20 +23,13 @@ def get_base_prefix_compat():
     )
 
 
-print(get_base_prefix_compat())
-
-
 def in_virtualenv():
     return get_base_prefix_compat() != sys.prefix
 
 
+print(get_base_prefix_compat())
 print(in_virtualenv())
 
-
-playsound("audio/sniper.mp3")
-
-
-print("Initialising...")
 
 # Constants and configurations
 LOG_FILE = "log.json"
