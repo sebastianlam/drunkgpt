@@ -7,12 +7,15 @@ import json
 import pyttsx3
 import speech_recognition as sr
 from playsound import playsound
+import sys
+
 
 playsound("audio/sniper.mp3")
 print("Initialising...")
 
 
 def get_base_prefix_compat():
+    """Get base/real prefix, or sys.prefix if there is none."""
     return (
         getattr(sys, "base_prefix", None)
         or getattr(sys, "real_prefix", None)
@@ -27,15 +30,14 @@ def in_virtualenv():
 print(get_base_prefix_compat())
 print(in_virtualenv())
 
+
 # Constants and configurations
 LOG_FILE = "log.json"
 PERSONAS_FILE = "personas.json"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Load personas
-with open(PERSONAS_FILE, "r") as f:
-    personas = json.load(f)
-
+personas = json.load(open(PERSONAS_FILE, "r"))
 persona_options = list(personas.keys())
 persona_display = dict(enumerate(persona_options, 1))
 
@@ -49,10 +51,14 @@ gpt_options = filter(lambda string: "gpt" in string, model_names)
 model_str = list(gpt_options)
 model_display = dict(enumerate(model_str, 1))
 
+# avail_details = [d for d in model_ls["data"] if d["id"] in model_str]
+# print(avail_details)
+
 # Text to speech settings
 engine = pyttsx3.init()
 rate = engine.getProperty("rate")
 engine.setProperty("rate", rate)
+
 
 # Voice recognition init
 r = sr.Recognizer()
@@ -63,12 +69,13 @@ def time_str():
     return str(datetime.datetime.utcnow())
 
 
-def startup_check(log_file):
-    if os.path.isfile(log_file) and os.access(log_file, os.R_OK):
+def startupCheck():
+    if os.path.isfile(LOG_FILE) and os.access(LOG_FILE, os.R_OK):
+        # checks if file exists
         print("Log loaded.")
     else:
         print("Either file is missing or is not readable, creating file...")
-        with io.open(os.path.join(".", log_file), "w") as db_file:
+        with io.open(os.path.join(".", LOG_FILE), "w") as db_file:
             db_file.write(json.dumps({"chats": []}))
 
 
@@ -181,7 +188,7 @@ def prompting(is_speech, context):
 def main():
 
     start_time = time_str()
-    startup_check(LOG_FILE)
+    startupCheck()
     context_arr = []
     voice_opt = speech_prompt()
     MODEL_ID = model_prompt(model_display)
