@@ -181,7 +181,7 @@ def prompting(is_speech, context):
 def main():
 
     start_time = time_str()
-    startup_check()
+    startup_check(LOG_FILE)
     context_arr = []
     voice_opt = speech_prompt()
     MODEL_ID = model_prompt(model_display)
