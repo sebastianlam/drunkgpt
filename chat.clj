@@ -1,115 +1,66 @@
 (ns chat
-  (:require [clj-http.client :as http]
-            [clojure.data.json :as json]
-            [clojure.java.io :as io]
-            [tts-say.core :as tts]))
+  (:require [clojure.java.io :as io]
+            [clj-http.client :as client]
+            [cheshire.core :as json]
+            [java-time :as jt]))
 
-(def LOG_FILE "log.json")
-(def PERSONAS_FILE "personas.json")
-(def ^:dynamic OPENAI_API_KEY (System/getenv "OPENAI_API_KEY"))
-
-; Load personas
-(def personas
-  (with-open [reader (io/reader PERSONAS_FILE)]
-    (json/read reader)))
-
-(def persona-options (keys personas))
-(def persona-display (zipmap (range 1 (inc (count persona-options))) persona-options))
-
-; Speaker configuration
-(def engine (tts/init-speech-handler))
-
-; Functions
 (defn time-str []
-  (str (java.time.LocalDateTime/now)))
+  (jt/toString (jt/instant)))
 
-(defn startup-check []
-  (if (and (io/file LOG_FILE) (.canRead (io/as-file LOG_FILE)))
-    (println "Log loaded.")
-    (do (println "Either file is missing or is not readable, creating file...")
-        (.write (io/writer (io/file LOG_FILE)) (json/write-str {"chats" []})))))
+(defn startup-check! [log-file]
+  (when-not (.exists (io/file log-file))
+    (with-open [db-file (io/writer (io/file log-file))]
+      (.write db-file (json/generate-string {:chats []})))
+    (prn "Log created.")))
 
-(defn json-log [f-name key data]
-  (let [old-data (-> (slurp f-name)
-                     (json/read-str :key-fn keyword))]
-    (-> (update old-data key conj data)
-        (json/write-str :pretty true)
-        (spit f-name))))
+(defn json-log! [f-name key data]
+  (let [old-data (-> f-name slurp json/parse-string)]
+    (with-open [json-file (io/writer f-name)]
+      (.write json-file
+        (json/generate-string (update old-data key conj data) :pretty true)))))
 
-(defn session-log! [context init-time model is-end?]
-  (let [log-content {"start" init-time
-                     "end" (time-str)
-                     "model" model
-                     "content" context}]
-    (json-log LOG_FILE :chats log-content)
-    (when is-end? (println "\nAuf Wiedersehen!") (System/exit 0))))
+(defn request-response [api-key model messages]
+  (-> (client/post
+        "https://api.openai.com/v1/engines/davinci-codex/completions"
+        {:body (json/generate-string {:model model, :messages messages})
+         :headers {"Authorization" (str "Bearer " api-key), "Content-Type" "application/json"}
+         :content-type :json, :accept :json})
+      :body json/parse-string :choices first :message))
 
-(defn talk! [string]
-  (tts/speech-handler string))
+(defn input [prompt]
+  (print prompt)
+  (flush) ;; Flush helps ensure the prompt appears properly before waiting for the user.
+  (read-line))
 
-(defn model-prompt [model-display]
-  (let [display (apply str (map (fn [[k v]] (str "(" k ") " v "\n")) model-display))]
-    (loop []
-      (print (str "Choose your model:\n" display))
-      (flush)
-      (let [choice (try
-                     (Integer/parseInt (read-line))
-                     (catch Exception e nil))]
-        (if-let [model (model-display choice)]
-          (do (println (str "You have chosen " model)) model)
-          (recur))))))
+(defn prompt-session [log-file person persona]
+  (let [init-time (time-str)
+        model "text-davinci-002"
+        openid (System/getenv "OPENAI_API_KEY")
+        context [{:role "system", :content (get persona person)}]
+        msg-loop (fn process-msgs [context]
+                   (let [content (input "\nUser:\n")
+                         context (conj context {:role "user", :content content})
+                         answer (->> context (request-response openid model) :content)
+                         cost-display (str (->> context (request-response openid model) :usage))]
+                     (println (str "\n" person ": " answer "\n" cost-display "\n"))
+                     (json-log! log-file "chats" {:start init-time, :end (time-str), :model model, :content context})
+                     (recur (conj context {:role "assistant", :content answer}))))]
+    (startup-check! log-file)
+    (msg-loop context)))
 
-(defn persona-input [options is-continue context time model]
-  (let [display (apply str (map (fn [[k v]] (str "(" k ") " v "\n")) options))]
-    (loop []
-      (print (str "Choose your fighter:\n" display))
-      (flush)
-      (let [choice (try
-                     (Integer/parseInt (read-line))
-                     (catch Exception e nil))]
-        (if-let [choice-option (options choice)]
-          (do (when is-continue
-                (session-log! context time model false))
-              (println (str "You have chosen " choice-option))
-              (let [new-context (conj context {"role" "system" "content" (personas choice-option)})]
-                [choice-option new-context]))
-          (recur))))))
+(defn select-persona [personas]
+  (prn "Choose your fighter:")
+  (doseq [[idx persona] (map-indexed vector personas)]
+    (prn (str "(" (inc idx) ") " persona)))
+  (let [choice (dec (Integer/parseInt (input "")))]
+    (if (< choice (count personas))
+      (nth personas choice)
+      (do (prn "Invalid choice") (select-persona personas)))))
 
-(defn main
-  [& args]
-  (let [_ (startup-check)
-        start-time (time-str)
-        _ (println "Initialising...")
-        model-id (model-prompt model-display)
-        [agent context-arr] (persona-input persona-display false [] start-time model-id)]
-    (println "(input \"new\" for session change)") 
-    (doseq [prompt-idx (iterate inc 1)]
-      (defn handle-input [context-arr start-time model-id]
-        (let [prompt-io (read-line)]
-          (cond
-            (empty? prompt-io)
-            (do (println "Give me something mate.") (handle-input context-arr start-time model-id))
-
-            (.equalsIgnoreCase "new" prompt-io)
-            (do (let [[new-agent new-context-arr] (persona-input persona-display true context-arr start-time model-id)]
-                  (reset! agent new-agent)
-                  (reset! context-arr new-context-arr)
-                  (reset! start-time (time-str))
-                  (handle-input context-arr start-time model-id)))
-
-            :else
-            (do (reset! context-arr (conj context-arr {"role" "user" "content" prompt-io}))
-                (let [response (-> (http/post (str "https://api.openai.com/v1/engines/" model-id "/completions")
-                                               {:headers {:authorization (str "Bearer " (str OPENAI_API_KEY))}
-                                   :content-type "application/json"
-                                   :body (json/write-str {"messages" context-arr})})
-                                 (json/read-str :key-fn keyword))
-                      assist (-> response :choices first :message)
-                      cost (-> response :usage)]
-                  (println (str "\n" agent ":\n" (:content assist) "\n" cost '\n""))
-                  (talk! (:content assist))
-                  (reset! context-arr (conj context-arr assist))
-                  (handle-input context-arr start-time model-id)))))))
-    (handle-input context-arr start-time model-id)))
+(defn main []
+  (let [personas-json (-> "personas.json" slurp json/parse-string)
+        person (select-persona (keys personas-json))]
+    (prompt-session "log.json" person personas-json)
+    (flush)))
 
 (main)
