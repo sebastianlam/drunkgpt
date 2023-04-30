@@ -1,122 +1,232 @@
+import io
 import os
-import json
-import sys
-import datetime
 import openai
+import datetime
+import sys
+import json
 import pyttsx3
 import speech_recognition as sr
+from playsound import playsound
+import sys
+
+
+playsound("audio/sniper.mp3")
+print("Initialising...")
+
+
+def get_base_prefix_compat():
+    """Get base/real prefix, or sys.prefix if there is none."""
+    return (
+        getattr(sys, "base_prefix", None)
+        or getattr(sys, "real_prefix", None)
+        or sys.prefix
+    )
+
+
+def in_virtualenv():
+    return get_base_prefix_compat() != sys.prefix
+
+
+print(get_base_prefix_compat())
+print(in_virtualenv())
+
 
 # Constants and configurations
 LOG_FILE = "log.json"
 PERSONAS_FILE = "personas.json"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-MODEL_ID = "gpt-3.5-turbo"
 
-# Initialize Text to Speech engine
-engine = pyttsx3.init()
-engine.setProperty('rate', engine.getProperty('rate') - 30)
+# Load personas
+personas = json.load(open(PERSONAS_FILE, "r"))
+persona_options = list(personas.keys())
+persona_display = dict(enumerate(persona_options, 1))
 
-# Initialize Speech Recognition
-recognizer = sr.Recognizer()
-
-# Load personas from file
-with open(PERSONAS_FILE, 'r') as f:
-    personas = json.load(f)
-
-# Set OpenAI API key
+# OpenAI init
 openai.api_key = OPENAI_API_KEY
+model_ls = openai.Model.list()
+
+# Load available models
+model_names = [d["id"] for d in model_ls["data"] if "id" in d]
+gpt_options = filter(lambda string: "gpt" in string, model_names)
+model_str = list(gpt_options)
+model_display = dict(enumerate(model_str, 1))
+
+# avail_details = [d for d in model_ls["data"] if d["id"] in model_str]
+# print(avail_details)
+
+# Text to speech settings
+engine = pyttsx3.init()
+rate = engine.getProperty("rate")
+engine.setProperty("rate", rate)
 
 
-def current_time_str():
+# Voice recognition init
+r = sr.Recognizer()
+r.operation_timeout = 5
+
+
+def time_str():
     return str(datetime.datetime.utcnow())
 
 
-def speech_prompt():
-    choice = input("Would you like to talk? (y/n): ")
-    return choice.lower() == "y"
+def startupCheck():
+    if os.path.isfile(LOG_FILE) and os.access(LOG_FILE, os.R_OK):
+        # checks if file exists
+        print("Log loaded.")
+    else:
+        print("Either file is missing or is not readable, creating file...")
+        with io.open(os.path.join(".", LOG_FILE), "w") as db_file:
+            db_file.write(json.dumps({"chats": []}))
+
+
+def json_log(f_name, key, data):
+    with open(f_name, "r", encoding="utf-8") as jsonFile:
+        old_data = json.load(jsonFile)
+    old_data[key].append(data)
+    with open(f_name, "w") as jsonFile:
+        json.dump(old_data, jsonFile, ensure_ascii=False, indent=4)
+
+
+def session_log(context, init_time, model, is_end):
+    log_content = {
+        "start": init_time,
+        "end": time_str(),
+        "model": model,
+        "content": context,
+    }
+    json_log(LOG_FILE, "chats", log_content)
+    if is_end:
+        print("\nAuf Wiedersehen!")
+        sys.exit()
+
+
+def talk(string):
+    engine.say(string)
+    engine.runAndWait()
 
 
 def transcribe():
     with sr.Microphone() as source:
+        playsound("audio/start.mp3")
         print("Listening...")
-        audio = recognizer.listen(source)
-
+        audio = r.listen(source, timeout=r.operation_timeout)
     try:
-        print("thinking...")
-        return recognizer.recognize_whisper_api(audio, api_key=openai.api_key)
-    except sr.RequestError:
+        playsound("audio/end.mp3")
+        print("thinking")
+        return r.recognize_whisper_api(audio, api_key=openai.api_key)
+    except sr.RequestError as e:
         print("Could not request results from Whisper API")
-        return input("We can't hear you at the moment, type here instead: ")
+        return e
+    except sr.WaitTimeoutError as e:
+        print("Timeout error: " + str(e))
+        return e
 
 
-def startup_check():
-    if not os.path.isfile(LOG_FILE) or not os.access(LOG_FILE, os.R_OK):
-        print("Either file is missing or is not readable, creating file...")
-        with open(LOG_FILE, 'w') as db_file:
-            json.dump({"chats": []}, db_file, ensure_ascii=False, indent=4)
+def speech_prompt():
+    try:
+        choice = input("Would you like to talk? (y/n): ")
+        return choice.lower() == "y"
+    except KeyboardInterrupt:
+        print("\nAuf Wiedersehen!")
+        sys.exit()
 
 
-def get_user_input(use_speech):
-    if use_speech:
-        return transcribe()
-    else:
-        return input("User: ")
-
-
-def get_persona(context):
-    display = ' | '.join(list(personas.keys()))
+def model_prompt(models):
+    display = "\n".join([*["(" + str(k) + ") " + str(v) for k, v in models.items()]])
     while True:
-        choice = input(f"Choose your fighter:\n{display}\n")
-        if choice in personas:
-            context[0] = {"role": "system", "content": personas[choice]}
-            return choice, context
+        try:
+            choice = int(input(f"Choose your model:\n{display}\n"))
+        except ValueError:
+            print("Type the corresponding number please.")
+            continue
+        except KeyboardInterrupt:
+            print("\nAuf Wiedersehen!")
+            sys.exit()
+        if choice in models:
+            print(f"You have chosen {models[choice]}")
+            return models[choice]
+        else:
+            print("Your choice is not available")
 
 
-def log_chat_session(context):
-    session_log = {"start": start_time, "end": current_time_str(), "content": context}
-    with open(LOG_FILE, "r", encoding='utf-8') as jsonFile:
-        old_data = json.load(jsonFile)
-    old_data["chats"].append(session_log)
-    with open(LOG_FILE, "w") as jsonFile:
-        json.dump(old_data, jsonFile, ensure_ascii=False, indent=4)
+def persona_input(options, is_continue, context, time, model):
+    display = "\n".join([*["(" + str(k) + ") " + str(v) for k, v in options.items()]])
+    while True:
+        try:
+            choice = int(input(f"Choose your fighter:\n{display}\n"))
+        except ValueError:
+            print("Type the corresponding number please.")
+            continue
+        except KeyboardInterrupt:
+            session_log(context, time, model, True)
+        if choice in options:
+            if is_continue:
+                session_log(context, time, model, False)
+            context = [{"role": "system", "content": personas[options[choice]]}]
+            print(f"You have chosen {options[choice]}")
+            return options[choice], context
+        else:
+            print("Your choice is not available")
+
+
+def prompting(is_speech, context):
+    if is_speech:
+        try:
+            preview = transcribe()
+            talk("hmm...")
+            print("\033[3m{}\033[0m".format(preview), "\n")
+            return preview
+        except sr.RequestError:
+            return input("We can't hear you at the moment, type here instead:\n")
+    else:
+        return input("User:\n")
+
+
+####################################################################################################
 
 
 def main():
-    startup_check()
 
-    context_arr = [{"role": "system", "content": ""}]
-    agent, context_arr = get_persona(context_arr)
+    start_time = time_str()
+    startupCheck()
+    context_arr = []
     voice_opt = speech_prompt()
+    MODEL_ID = model_prompt(model_display)
+    agent, context_arr = persona_input(
+        persona_display, False, context_arr, start_time, MODEL_ID
+    )
+    print('(input "new" for session change)')
 
     while True:
         try:
-            user_input = get_user_input(voice_opt)
+            promptio = prompting(voice_opt, context_arr)
         except KeyboardInterrupt:
-            log_chat_session(context_arr)
-            print("\nAuf Wiedersehen!")
-            sys.exit()
-
-        if user_input == "new":
-            agent, context_arr = get_persona(context_arr)
+            session_log(context_arr, start_time, MODEL_ID, True)
+        if promptio.lower() == "new":
+            agent, context_arr = persona_input(
+                persona_display, True, context_arr, start_time, MODEL_ID
+            )
+            start_time = time_str()
             continue
-        if user_input == "switch":
-            agent, context_arr = get_persona(context_arr)
+        if promptio.lower() == "":
+            print("Give me something mate.")
             continue
+        context_arr.append({"role": "user", "content": promptio})
+        response = openai.ChatCompletion.create(model=MODEL_ID, messages=context_arr)
 
-        context_arr.append({"role": "user", "content": user_input})
-        response = openai.ChatCompletion.create(
-            model=MODEL_ID,
-            messages=context_arr
-        )
+        # print(response)
 
         assist = response.choices[0].message
-        cost = response.usage.total_tokens
-        print(f"\n{agent}:\n{assist.content}\nCost: USD {cost * 0.002 / 1000}\n")
-        engine.say(assist.content)
-        engine.runAndWait()
+        cost = response.usage
+        cost_display = "  ".join(
+            [*["(" + str(k) + ") " + str(v) for k, v in cost.items()]]
+        )
+        print(f"\n{agent}:\n{assist.content}\n{cost_display}\n")
         context_arr.append(assist)
+        try:
+            talk(assist.content)
+        except KeyboardInterrupt:
+            session_log(context_arr, start_time, MODEL_ID, True)
 
 
-if __name__ == "__main__":
-    start_time = current_time_str()
-    main()
+main()
