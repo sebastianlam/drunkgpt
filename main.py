@@ -10,7 +10,7 @@ from playsound import playsound
 import sys
 
 
-playsound("audio/sniper.mp3")
+# playsound("audio/sniper.mp3")
 print("Initialising...")
 
 
