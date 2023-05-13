@@ -67,3 +67,51 @@ Fantastic! I'm glad I could be of assistance. And if you need any more edgy, ina
 #### start and end tone for voice input
 
 #### multi agent chat
+
+#### api access for audited access
+
+```python
+    import io, sys
+    # master context
+    master = {
+        "parties": {
+            "host": "Brian"
+            "guest": "Goop"}
+        "sys": {
+            "host": [
+                """
+                custom or auto generated system prompt by host
+                """,
+                "test embedding link"
+            ],
+            "guest": [
+                """
+                custom or auto generated system prompt by host
+                """,
+                "test embedding link"
+            ]
+        }
+        "context": [
+            1: {
+                "message": "What experience do you have that makes you suitable for a role that involves communicating with adversarial clients?",
+                "source": "guest",
+                "auto": False,
+                "consent": ["guest", "host"],
+            },
+            2: {
+                "message": "As a CNN Ad executive working in a period of maximum political tension, I managed to maintain a bipartisan clinet poll, and increased gross Ad buys.",
+                "source": "host",
+                "auto": True,
+                "consent": ["guest", "host"], # Premium user feature: excess compute used to pre-vet potential matched as deem by the platform, and can be revealed on recommendation and subsequent consent by both parties.
+            },
+            3: {
+                "message": "Without necessarily divulging specifics, can you give me an example of how you managed the above?", # Option for auto followups
+                "source": "guest",
+                "auto": True,
+                "consent": ["guest"],
+            }
+
+
+        ]
+    }
+```
