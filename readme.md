@@ -10,6 +10,8 @@ brew install portaudio
 
 NOTE: Early adopters will have to `pip uninstall pyttsx3`, and redo `pip install -r requirements.txt` to replace a broken package with its functional fork.
 
+Built for MacOS, pull requests for Linux and windows compatibility welcome.
+
 ### INITIAL INSTALLATION
 
 ```sh
