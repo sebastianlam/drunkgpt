@@ -18,10 +18,10 @@ for chunk in openai.ChatCompletion.create(
     model="gpt-3.5-turbo",
     messages=[{
         "role": "user",
-        "content": "write a story about the use of plastic in the 14th century."
+        "content": "in zsh, when working with python print statements, there is loop of print statements with the end parameter set to \"\" so that it does not print a new line, why does it only print the text after a whole paragraph?"
     }],
     stream=True,
 ):
     content = chunk["choices"][0].get("delta", {}).get("content")
     if content is not None:
-        print(f"{content}", end='')
+        print(content, end="")
