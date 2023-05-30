@@ -15,7 +15,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 total = []
 for chunk in openai.ChatCompletion.create(
-    model="gpt-4",
+    model="gpt-3.5-turbo",
     messages=[{
         "role": "user",
         "content": "write a story about the use of plastic in the 14th century."
@@ -23,4 +23,5 @@ for chunk in openai.ChatCompletion.create(
     stream=True,
 ):
     content = chunk["choices"][0].get("delta", {}).get("content")
-    print(f"{content}", end='')
+    if content is not None:
+        print(f"{content}", end='')
