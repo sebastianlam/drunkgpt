@@ -1,4 +1,10 @@
-import os, openai, sys, time, pyttsx3
+import os
+import sys
+import time
+import pyttsx3
+import openai
+import threading
+import queue
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -8,9 +14,20 @@ engine = pyttsx3.init()
 rate = engine.getProperty("rate")
 engine.setProperty("rate", rate * 0.9)
 
-def talk(string):
-    engine.say(string)
-    engine.runAndWait()
+tts_queue = queue.Queue()
+
+def on_end(name, completed):
+    engine.stop()
+
+engine.connect('finished-utterance', on_end)
+
+def talk():
+    while True:
+        string = tts_queue.get()
+        if string == "STOP":
+            break
+        engine.say(string)
+        engine.startLoop(True)
 
 def sink():
     total = []
@@ -30,12 +47,17 @@ def sink():
             print(content, end="", flush=True)
             if content in ['.', '!', '?', ':', ';', '\n', '\n\n']:
                 line = ''.join(pieces)
-                talk(line)
-                pieces = [] 
-            
+                tts_queue.put(line)
+                pieces = []
+
     final = ''.join(total)
     print(final)
+    tts_queue.put("STOP")
+
 def main():
+    tts_thread = threading.Thread(target=talk)
+    tts_thread.start()
     sink()
+    tts_thread.join()
 
 main()

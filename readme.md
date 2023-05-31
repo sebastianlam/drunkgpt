@@ -66,6 +66,10 @@ Fantastic! I'm glad I could be of assistance. And if you need any more edgy, ina
 
 ### in the works
 
+#### Async TTS
+
+As tokens stream into the client, after a phrase is accumulated, it will be put into a queue for a seperate TTS thread to voice it out. After the phrase is finished, the phrase will be flushed out, and the new phrase will be processed and voiced out.
+
 #### start and end tone for voice input
 
 #### multi agent chat
