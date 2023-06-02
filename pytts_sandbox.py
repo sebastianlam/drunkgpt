@@ -1,38 +1,52 @@
 import pyttsx3
 import threading
-import queue
+import queue, os, time
 
-sentences = queue.Queue()
+sentences = []
 running = True
+count = 0
+
+def status_signal(focus):
+    if len(focus) == 0:
+        return 'pause'
+    else: return 'mid'
+
 
 
 def text_to_speech():
-    global running
-    engine = pyttsx3.init()
-
-    def onEnd(name, completed):
-        if not sentences.empty():
-            sentence = sentences.get()
-            engine.say(sentence, name)
-            print('1', flush=True)
-        print('2', flush=True)
-
-    engine.connect('finished-utterance', onEnd)
-
-    while running or not sentences.empty():
-        if not sentences.empty():
-            sentence = sentences.get()
-            engine.say(sentence, sentence)
-            engine.runAndWait()
-            print('3', flush=True)
-        print('4', flush=True)
+    # global running
+    # engine = pyttsx3.init()
+    # global count
+    # global sentences
+    # def onStart(name):
+    #     print('starting', name)
+    # def onWord(name, location, length):
+    #     print('word', name, location, length)
+    # def onEnd(name, completed):
+    #     print('finishing', name, completed, count)
+    #     if name == 'init':
+    #         engine.say(sentences.pop(), 'init')
+    #     elif name == 'pause':
+    #         engine.endLoop()
+    # engine = pyttsx3.init()
+    # engine.connect('started-utterance', onStart)
+    # engine.connect('started-word', onWord)
+    # engine.connect('finished-utterance', onEnd)
+    # engine.say('Right lets chop some heads off my mateys.', 'init')
+    # engine.startLoop()
+    while True:
+        if len(sentences) > 0:
+            os.system(f"say {sentences.pop()}")
+        else:
+            time.sleep(0.5)
 
 
 def add_sentence(sentence):
-    sentences.put(sentence)
+    sentences.append(sentence)
+    print(sentences, flush=True)
 
 
-def add_sentences_process():
+def sentences_process():
     global running
     while True:
         sentence = input("Enter a new sentence (type 'exit' to quit): ")
@@ -41,6 +55,7 @@ def add_sentences_process():
             running = False
             break
         add_sentence(sentence)
+        print(sentences, flush=True)
 
 
 def main():
@@ -55,14 +70,13 @@ def main():
     for sentence in initial_sentences:
         add_sentence(sentence)
 
-    speech_thread = threading.Thread(target=text_to_speech)
-    speech_thread.start()
-
-    add_sentences_thread = threading.Thread(target=add_sentences_process)
-    add_sentences_thread.start()
-
-    add_sentences_thread.join()
-    speech_thread.join()
+    sentences_thread = threading.Thread(target=sentences_process)
+    sentences_thread.start()
+    voice_thread = threading.Thread(target=text_to_speech)
+    voice_thread.start()
+    sentences_thread.join()
+    voice_thread.join()
+    
 
 
 if __name__ == "__main__":
