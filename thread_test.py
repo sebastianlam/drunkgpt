@@ -1,16 +1,16 @@
-import threading, openai, time, queue, os
+import threading, openai, time, os
 
-sentences = queue.Queue()
+sentences = []
 running = True
 
 def text_to_speech():
     global running
     while running:
         # print(f"---{sentences.qsize()}", flush=True)
-        if not sentences.empty():
-            sentence = sentences.get()
+        if len(sentences) > 0:
+            sentence = sentences.pop(0)
             line = sentence.replace("\"", "\"\"")
-            print("++++++++")
+            print(sentences)
             os.system(f'say \"{line}\"')
         else:
             time.sleep(2)
@@ -19,7 +19,7 @@ def text_to_speech():
     print("<<[]>> Text-to-speech thread has stopped.", flush=True)
 
 def add_sentence(sentence):
-    sentences.put(sentence)
+    sentences.append(sentence)
     # print(f"+++{sentences.qsize()}", flush=True)
 
 def add_sentences_process():
@@ -35,7 +35,7 @@ def add_sentences_process():
     ):
         content = chunk["choices"][0].get("delta", {}).get("content")
         if content is not None:
-            total.append(content)
+            # total.append(content)
             pieces.append(content)
             print(content, end="", flush=True)
             # print(chunk, end="", flush=True)
@@ -51,9 +51,14 @@ def add_sentences_process():
                 # print("#", end="", flush=True) # Divider debug
                 sentence = "".join(pieces)
                 add_sentence(sentence)
+                print(sentences)
                 pieces = []
+        else:
+            sentence = "".join(pieces)
+            add_sentence(sentence)
+            pieces = []
             
-    final = "".join(total)
+    # final = "".join(total)
 
 
 def main():
