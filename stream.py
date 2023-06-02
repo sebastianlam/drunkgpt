@@ -7,8 +7,7 @@ rate = engine.getProperty("rate")
 engine.setProperty("rate", rate * 0.9)
 
 def sink():
-    total = []
-    pieces = []
+    total, pieces = [], []
     for chunk in openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[{
@@ -24,7 +23,7 @@ def sink():
             print(content, end="", flush=True)
             # print(chunk, end="", flush=True)
             if content in [
-                ".", ". ", ".\n", ".\n\n",
+                "."      , ".\n", ".\n\n",
                 ",", ", ", ",\n", ",\n\n",
                 "!", "! ", "!\n", "!\n\n",
                 "?", "? ", "?\n", "?\n\n",
@@ -42,4 +41,5 @@ def sink():
 def main():
     sink()
 
-main()
+if __name__ == "__main__":
+    main()

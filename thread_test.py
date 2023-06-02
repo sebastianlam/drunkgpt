@@ -15,7 +15,7 @@
 # Just to remind you that this is the entire python file. Make radical changes if need be.
 # And add print statements liberally to help the debuging process. MAke the print statements meaningful.
 
-import threading
+import threading, openai
 import time
 import queue
 from gtts import gTTS
@@ -30,10 +30,10 @@ def text_to_speech():
     while running:
         if not sentences.empty():
             sentence = sentences.get()
-            print(f"<<[]>> Speaking: {sentence}", flush=True)
+            # print(f"<<[]>> Speaking: {sentence}", flush=True)
             tts = gTTS(text=sentence, lang='en')
             tts.save("temp.mp3")
-            os.system("mpg321 temp.mp3")
+            os.system("afplay -r 1.8 temp.mp3")
             os.remove("temp.mp3")
         else:
             time.sleep(0.1)
@@ -42,29 +42,48 @@ def text_to_speech():
 
 def add_sentence(sentence):
     sentences.put(sentence)
-    print(f"<<[]>> Added sentence: {sentence}", flush=True)
+    # print(f"<<[]>> Added sentence: {sentence}", flush=True)
 
 def add_sentences_process():
     global running
-    while True:
-        print("<<[]>> new loop", flush=True)
-        sentence = input("Enter a new sentence (type 'exit' to quit): ")
-
-        if sentence.lower() == 'exit':
-            running = False
-            break
-        print("<<[]>> About to add sentence", flush=True)
-        add_sentence(sentence)
+    # print("<<[]>> new loop", flush=True)
+    total, pieces = [], []
+    for chunk in openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[{
+            "role": "user",
+            "content": "Why is the sky blue? Philosophise very briefly about Rayleigh scattering"
+        }],
+        stream=True,
+    ):
+        content = chunk["choices"][0].get("delta", {}).get("content")
+        if content is not None:
+            total.append(content)
+            pieces.append(content)
+            print(content, end="", flush=True)
+            # print(chunk, end="", flush=True)
+            if content in [
+                "."      , ".\n", ".\n\n",
+                ", "     , ",\n", ",\n\n",
+                "!", "! ", "!\n", "!\n\n",
+                "?", "? ", "?\n", "?\n\n",
+                ":", ": ", ":\n", ":\n\n",
+                ";", "; ", ";\n", ";\n\n",
+                "\n", "\n\n", "\n\n\n",
+            ]:
+                print("#", end="", flush=True)
+                sentence = "".join(pieces)
+                # print(f"\n||||{line}||||\n")
+                # print("<<[]>> About to add sentence", flush=True)
+                add_sentence(sentence)
+                pieces = []
+            
+    final = "".join(total)
+    # print(final)
+            
+            
 
 def main():
-    for sentence in [
-        "This is the first sentence.",
-        "This is the second sentence.",
-        "This is the third sentence.",
-        "This is the fourth sentence.",
-        "This is the fifth sentence.",
-    ]:
-        add_sentence(sentence)
 
     speech_thread = threading.Thread(target=text_to_speech)
     speech_thread.start()
