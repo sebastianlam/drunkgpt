@@ -10,13 +10,12 @@ def text_to_speech():
         if len(sentences) > 0:
             sentence = sentences.pop(0)
             line = sentence.replace("\"", "\"\"")
-            print(sentences)
             os.system(f'say \"{line}\"')
         else:
             time.sleep(2)
             
 
-    print("<<[]>> Text-to-speech thread has stopped.", flush=True)
+    print("<<[]>> We're done here.", flush=True)
 
 def add_sentence(sentence):
     sentences.append(sentence)
@@ -29,7 +28,7 @@ def add_sentences_process():
         model="gpt-3.5-turbo",
         messages=[{
             "role": "user",
-            "content": "You are cher from the movie clueless. You are in a passive agressive conversation, but you want to bring class and nuance into the mix, in a discussion about iranian politics, Show your sass."
+            "content": "give me a list of notable ratios and their actuall values."
         }],
         stream=True,
     ):
@@ -40,7 +39,7 @@ def add_sentences_process():
             print(content, end="", flush=True)
             # print(chunk, end="", flush=True)
             if content in [
-                "."      , ".\n", ".\n\n",
+                           ".\n", ".\n\n",
                 ", "     , ",\n", ",\n\n",
                 "!", "! ", "!\n", "!\n\n",
                 "?", "? ", "?\n", "?\n\n",
@@ -51,7 +50,6 @@ def add_sentences_process():
                 # print("#", end="", flush=True) # Divider debug
                 sentence = "".join(pieces)
                 add_sentence(sentence)
-                print(sentences)
                 pieces = []
         else:
             sentence = "".join(pieces)
