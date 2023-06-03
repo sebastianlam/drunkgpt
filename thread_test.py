@@ -39,7 +39,7 @@ def add_sentences_process():
             print(content, end="", flush=True)
             # print(chunk, end="", flush=True)
             if content in [
-                           ".\n", ".\n\n",
+                ",",       ".\n", ".\n\n",
                 ", "     , ",\n", ",\n\n",
                 "!", "! ", "!\n", "!\n\n",
                 "?", "? ", "?\n", "?\n\n",
