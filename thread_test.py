@@ -12,18 +12,18 @@ def text_to_speech():
             line = sentence.replace("\"", "\"\"")
             os.system(f'say \"{line}\"')
         else:
-            time.sleep(2)
+            time.sleep(0.1)
             
 
-    print("<<[]>> We're done here.", flush=True)
+    print("<<[]>> SPEECH DEATH", flush=True)
 
 def add_sentence(sentence):
     sentences.append(sentence)
     # print(f"+++{sentences.qsize()}", flush=True)
 
-def add_sentences_process():
+def chat_stream():
     global running
-    total, pieces = [], []
+    local_total, local_pieces = [], []
     for chunk in openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[{
@@ -34,8 +34,8 @@ def add_sentences_process():
     ):
         content = chunk["choices"][0].get("delta", {}).get("content")
         if content is not None:
-            # total.append(content)
-            pieces.append(content)
+            # local_total.append(content)
+            local_pieces.append(content)
             print(content, end="", flush=True)
             # print(chunk, end="", flush=True)
             if content in [
@@ -48,30 +48,26 @@ def add_sentences_process():
                 "\n", "\n\n", "\n\n\n",
             ]:
                 # print("#", end="", flush=True) # Divider debug
-                sentence = "".join(pieces)
+                sentence = "".join(local_pieces)
                 add_sentence(sentence)
-                pieces = []
+                local_pieces = []
         else:
-            sentence = "".join(pieces)
+            sentence = "".join(local_pieces)
             add_sentence(sentence)
-            pieces = []
+            local_pieces = []
             
-    # final = "".join(total)
+    # final = "".join(local_total)
 
 
 def main():
-
-
-
-    add_sentences_thread = threading.Thread(target=add_sentences_process)
-    add_sentences_thread.start()
-
+    chat_thread = threading.Thread(target=chat_stream)
+    chat_thread.start()
 
     speech_thread = threading.Thread(target=text_to_speech)
     speech_thread.start()
 
-
-    add_sentences_thread.join()
+    chat_thread.join()
     speech_thread.join()
+
 if __name__ == "__main__":
     main()
