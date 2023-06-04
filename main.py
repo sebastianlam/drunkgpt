@@ -1,13 +1,6 @@
-import io
-import os
-import openai
-import datetime
-import sys
-import json
-import pyttsx3
+import io, os, openai, datetime, sys, json, pyttsx3
 import speech_recognition as sr
 from playsound import playsound
-import sys
 
 
 # playsound("audio/sniper.mp3")
