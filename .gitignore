@@ -2,3 +2,6 @@ log.txt
 log.json
 /chattier
 /venv
+/.clj-kondo
+/.lsp
+/.vscode
