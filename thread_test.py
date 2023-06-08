@@ -3,14 +3,20 @@ import threading, openai, time, os
 sentences = []
 running = True
 
-def text_to_speech():
+def text_to_speech(arr):
+    internal = arr
     global running
     while running:
         # print(f"---{sentences.qsize()}", flush=True)
-        if len(sentences) > 0:
-            sentence = sentences.pop(0)
-            line = sentence.replace("\"", "\"\"")
-            os.system(f'say \"{line}\"')
+        if len(internal) > 0:
+            try:
+                sentence = internal.pop(0)
+                line = sentence.replace("\"", "\"\"")
+                os.system(f'say \"{line}\"')
+            except KeyboardInterrupt:
+                print("clearing speech queue...", flush=True)
+                internal = []
+                print("done", flush=True)
         else:
             time.sleep(0.1)
             
@@ -36,6 +42,7 @@ def chat_stream():
         if content is not None:
             # local_total.append(content)
             local_pieces.append(content)
+            local_total.append(content)
             print(content, end="", flush=True)
             # print(chunk, end="", flush=True)
             if content in [
@@ -56,6 +63,7 @@ def chat_stream():
             add_sentence(sentence)
             local_pieces = []
             
+            
     # final = "".join(local_total)
 
 
@@ -63,7 +71,7 @@ def main():
     chat_thread = threading.Thread(target=chat_stream)
     chat_thread.start()
 
-    speech_thread = threading.Thread(target=text_to_speech)
+    speech_thread = threading.Thread(target=text_to_speech, args=sentences)
     speech_thread.start()
 
     chat_thread.join()

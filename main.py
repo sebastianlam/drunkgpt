@@ -1,69 +1,15 @@
-import io, os, openai, datetime, sys, json, pyttsx3
+import io, os, openai, datetime, sys, json, threading, time
 import speech_recognition as sr
 from playsound import playsound
 
 
-# playsound("audio/sniper.mp3")
-print("Initialising...")
+# Thread config
+running = True
 
 
-def get_base_prefix_compat():
-    """
-    Get base/real prefix, or sys.prefix if there is none.
-    """
-    return (
-        getattr(sys, "base_prefix", None)
-        or getattr(sys, "real_prefix", None)
-        or sys.prefix
-    )
-
-
-def in_virtualenv():
-    return get_base_prefix_compat() != sys.prefix
-
-
-print(get_base_prefix_compat())
-print(in_virtualenv())
-
-
-# Constants and configurations
-LOG_FILE = "log.json"
-PERSONAS_FILE = "personas.json"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-# Load personas
-personas = json.load(open(PERSONAS_FILE, "r"))
-persona_options = list(personas.keys())
-persona_display = dict(enumerate(persona_options, 1))
-
-# OpenAI init
-openai.api_key = OPENAI_API_KEY
-model_ls = openai.Model.list()
-
-# Load available models
-model_names = [d["id"] for d in model_ls["data"] if "id" in d]
-gpt_options = filter(lambda string: "gpt" in string, model_names)
-model_str = list(gpt_options)
-model_display = dict(enumerate(model_str, 1))
-
-# avail_details = [d for d in model_ls["data"] if d["id"] in model_str]
-# print(avail_details)
-
-# Text to speech settings
-engine = pyttsx3.init()
-rate = engine.getProperty("rate")
-engine.setProperty("rate", rate)
-
-
-# Voice recognition init
-r = sr.Recognizer()
-r.operation_timeout = 5
-
-
+# Utils
 def time_str():
     return str(datetime.datetime.utcnow())
-
-
 def startupCheck():
     if os.path.isfile(LOG_FILE) and os.access(LOG_FILE, os.R_OK):
         # checks if file exists
@@ -72,17 +18,13 @@ def startupCheck():
         print("Either file is missing or is not readable, creating file...")
         with io.open(os.path.join(".", LOG_FILE), "w") as db_file:
             db_file.write(json.dumps({"chats": []}))
-
-
 def json_log(f_name, key, data):
     with open(f_name, "r", encoding="utf-8") as jsonFile:
         old_data = json.load(jsonFile)
     old_data[key].append(data)
     with open(f_name, "w") as jsonFile:
         json.dump(old_data, jsonFile, ensure_ascii=False, indent=4)
-
-
-def session_log(context, init_time, model, is_end):
+def session_log(context, init_time, model):
     log_content = {
         "start": init_time,
         "end": time_str(),
@@ -90,14 +32,60 @@ def session_log(context, init_time, model, is_end):
         "content": context,
     }
     json_log(LOG_FILE, "chats", log_content)
-    if is_end:
-        print("\nAuf Wiedersehen!")
-        sys.exit()
 
 
-def talk(string):
-    engine.say(string)
-    engine.runAndWait()
+# Constants and configurations
+LOG_FILE = "log.json"
+PERSONAS_FILE = "personas.json"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+
+# Load personas
+personas = json.load(open(PERSONAS_FILE, "r"))
+persona_options = list(personas.keys())
+persona_display = dict(enumerate(persona_options, 1))
+
+
+# OpenAI init
+openai.api_key = OPENAI_API_KEY
+try:
+    model_ls = openai.Model.list()
+except (openai.AuthenticationError, openai.PermissionError) as e:
+    print(f"Invalid key or failed auth: {e}")
+    sys.exit()
+except (openai.InvalidRequestError, openai.APIError, openai.ServiceUnavailableError, openai.APIConnectionError) as e:
+    print(f"Services unavailable, try again later: {e}")
+    sys.exit()
+model_names = [d["id"] for d in model_ls["data"] if "id" in d]
+gpt_options = filter(lambda string: "gpt" in string, model_names)
+model_str = list(gpt_options)
+model_display = dict(enumerate(model_str, 1))
+
+
+# Voice recognition init
+r = sr.Recognizer()
+r.operation_timeout = 5
+
+
+# Speech init and functions
+speech_queue = []
+is_block = False
+def text_to_speech():
+    global running, speech_queue, is_block
+    while running:
+        if len(speech_queue) > 0:
+            try:
+                sentence = speech_queue[0]
+                line = sentence.replace('\"', '\"\"')
+                os.system(f'say \"{line}\"')
+                speech_queue.pop(0)
+            except KeyboardInterrupt:
+                print("clearing speech queue... ", end="",flush=True)
+                speech_queue = []
+                print("Done.", flush=True)
+        else:
+            is_block = False
+            time.sleep(0.1)
 
 
 def transcribe():
@@ -119,7 +107,7 @@ def transcribe():
 
 def speech_prompt():
     try:
-        choice = input("Would you like to talk? (y/n): ")
+        choice = input("Enable dictated input? (y/n): ")
         return choice.lower() == "y"
     except KeyboardInterrupt:
         print("\nAuf Wiedersehen!")
@@ -135,8 +123,7 @@ def model_prompt(models):
             print("Type the corresponding number please.")
             continue
         except KeyboardInterrupt:
-            print("\nAuf Wiedersehen!")
-            sys.exit()
+            return e
         if choice in models:
             print(f"You have chosen {models[choice]}")
             return models[choice]
@@ -144,7 +131,10 @@ def model_prompt(models):
             print("Your choice is not available")
 
 
-def persona_input(options, is_continue, context, time, model):
+def persona_input(options, is_continue, context, init_time, model):
+    """
+
+    """
     display = "\n".join([*["(" + str(k) + ") " + str(v) for k, v in options.items()]])
     while True:
         try:
@@ -152,11 +142,11 @@ def persona_input(options, is_continue, context, time, model):
         except ValueError:
             print("Type the corresponding number please.")
             continue
-        except KeyboardInterrupt:
-            session_log(context, time, model, True)
+        except KeyboardInterrupt as e:
+            return e
         if choice in options:
             if is_continue:
-                session_log(context, time, model, False)
+                session_log(context, init_time, model)
             context = [{"role": "system", "content": personas[options[choice]]}]
             print(f"You have chosen {options[choice]}")
             return options[choice], context
@@ -164,11 +154,12 @@ def persona_input(options, is_continue, context, time, model):
             print("Your choice is not available")
 
 
-def prompting(is_speech, context):
+def prompting(is_speech):
     if is_speech:
         try:
             preview = transcribe()
-            talk("hmm...")
+            # talk("hmm...")
+            os.system(f'say "hmm..."')
             print("\033[3m{}\033[0m".format(preview), "\n")
             return preview
         except sr.RequestError:
@@ -177,51 +168,97 @@ def prompting(is_speech, context):
         return input("User:\n")
 
 
-####################################################################################################
+def chat_loop():
+    global running, speech_queue, is_block, agent, voice_opt, MODEL_ID, voice_opt, context_arr
+    local_total, local_pieces = [], []
+    while True:
+        try:
+            promptio = prompting(voice_opt, context_arr)
+            if promptio.lower() == "new":
+                agent, context_arr = persona_input(
+                    persona_display, True, context_arr, start_time, MODEL_ID
+                )
+                start_time = time_str()
+                continue
+            if promptio.lower() == "":
+                print("Give me something mate.")
+                continue
+            context_arr.append({"role": "user", "content": promptio})
+            is_block = True
+            for chunk in openai.ChatCompletion.create(
+                model=MODEL_ID, messages=context_arr, stream=True
+            ):
+                content = chunk["choices"][0].get("delta", {}).get("content")
+                if content is not None:
+                    # local_total.append(content)
+                    local_pieces.append(content)
+                    local_total.append(content)
+                    print(content, end="", flush=True)
+                    # print(chunk, end="", flush=True)
+                    if content in [".", ".\n", ".\n\n", ", ", ",\n", ",\n\n", "!", "! ", "!\n", "!\n\n", "?", "? ", "?\n", "?\n\n", ":", ": ", ":\n", ":\n\n", ";", "; ", ";\n", ";\n\n", "\n", "\n\n", "\n\n\n",]:
+                        sentence = "".join(local_pieces)
+                        speech_queue.append(sentence)
+                        local_pieces = []
+                else:
+                    sentence = "".join(local_pieces)
+                    speech_queue.append(sentence)
+                    local_pieces = []
+            assist = "".join(local_total)
+            local_total = []
+
+            # cost = response.usage
+            # cost_display = "  ".join(
+            #     [*["(" + str(k) + ") " + str(v) for k, v in cost.items()]]
+            # )
+            # print(f"\n{agent}:\n{assist.content}\n{cost_display}\n")
+            
+        except KeyboardInterrupt:
+            assist = "".join(local_total)
+            context_arr.append({"role": "assistant", "content": assist})
+            session_log(context_arr, start_time, MODEL_ID)
+            print("\nAuf Wiedersehen!")
+            sys.exit()
+        try:
+            wait_counter = 0
+            print("DEBUG: LOOP ATTEMPT")
+            while len(speech_queue) > 0 and is_block == True:
+                wait_counter += 1
+                print(f"{wait_counter}, ", end="", flush=True)
+                time.sleep(1)
+            print("DEBUG: NEW LOOP")
+            continue
+        except KeyboardInterrupt:
+            print("\nSpeech skipped.\n")
+            continue
 
 
-def main():
 
-    start_time = time_str()
+try:
     startupCheck()
     context_arr = []
+    start_time = time_str()
     voice_opt = speech_prompt()
     MODEL_ID = model_prompt(model_display)
     agent, context_arr = persona_input(
         persona_display, False, context_arr, start_time, MODEL_ID
     )
-    print('(input "new" for session change)')
+except KeyboardInterrupt as e:
+    print(e)
+    sys.exit()
 
-    while True:
-        try:
-            promptio = prompting(voice_opt, context_arr)
-        except KeyboardInterrupt:
-            session_log(context_arr, start_time, MODEL_ID, True)
-        if promptio.lower() == "new":
-            agent, context_arr = persona_input(
-                persona_display, True, context_arr, start_time, MODEL_ID
-            )
-            start_time = time_str()
-            continue
-        if promptio.lower() == "":
-            print("Give me something mate.")
-            continue
-        context_arr.append({"role": "user", "content": promptio})
-        response = openai.ChatCompletion.create(model=MODEL_ID, messages=context_arr)
+def main():
 
-        # print(response)
+    print("(Type \"new\" for session change)\n")
 
-        assist = response.choices[0].message
-        cost = response.usage
-        cost_display = "  ".join(
-            [*["(" + str(k) + ") " + str(v) for k, v in cost.items()]]
-        )
-        print(f"\n{agent}:\n{assist.content}\n{cost_display}\n")
-        context_arr.append(assist)
-        try:
-            talk(assist.content)
-        except KeyboardInterrupt:
-            session_log(context_arr, start_time, MODEL_ID, True)
+    chat_thread = threading.Thread(target=chat_loop)
+    chat_thread.start()
+
+    speech_thread = threading.Thread(target=text_to_speech)
+    speech_thread.start()
+
+    chat_thread.join()
+    speech_thread.join()
 
 
-main()
+if __name__ == "__main__":
+    main()
