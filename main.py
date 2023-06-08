@@ -74,10 +74,14 @@ def text_to_speech():
     global running, speech_queue, is_block
     while running:
         if len(speech_queue) > 0:
+            is_block = True
             try:
                 sentence = speech_queue[0]
-                line = sentence.replace('\"', '\"\"')
-                os.system(f'say \"{line}\"')
+                for ch in ["\n", "`", "\"", "$("]:
+                    if ch in sentence:
+                        sentence = sentence.replace(ch, ', ')
+                if sentence is not "":
+                    os.system(f'say \"{sentence}\"')
                 speech_queue.pop(0)
             except KeyboardInterrupt:
                 print("clearing speech queue... ", end="",flush=True)
@@ -165,15 +169,17 @@ def prompting(is_speech):
         except sr.RequestError:
             return input("We can't hear you at the moment, type here instead:\n")
     else:
-        return input("User:\n")
-
+        try:
+            return input("User:\n")
+        except KeyboardInterrupt as e:
+            return e
 
 def chat_loop():
     global running, speech_queue, is_block, agent, voice_opt, MODEL_ID, voice_opt, context_arr
     local_total, local_pieces = [], []
     while True:
         try:
-            promptio = prompting(voice_opt, context_arr)
+            promptio = prompting(voice_opt)
             if promptio.lower() == "new":
                 agent, context_arr = persona_input(
                     persona_display, True, context_arr, start_time, MODEL_ID
@@ -185,27 +191,32 @@ def chat_loop():
                 continue
             context_arr.append({"role": "user", "content": promptio})
             is_block = True
-            for chunk in openai.ChatCompletion.create(
-                model=MODEL_ID, messages=context_arr, stream=True
-            ):
-                content = chunk["choices"][0].get("delta", {}).get("content")
-                if content is not None:
-                    # local_total.append(content)
-                    local_pieces.append(content)
-                    local_total.append(content)
-                    print(content, end="", flush=True)
-                    # print(chunk, end="", flush=True)
-                    if content in [".", ".\n", ".\n\n", ", ", ",\n", ",\n\n", "!", "! ", "!\n", "!\n\n", "?", "? ", "?\n", "?\n\n", ":", ": ", ":\n", ":\n\n", ";", "; ", ";\n", ";\n\n", "\n", "\n\n", "\n\n\n",]:
+            try:
+                for chunk in openai.ChatCompletion.create(
+                    model=MODEL_ID, messages=context_arr, stream=True
+                ):
+                    content = chunk["choices"][0].get("delta", {}).get("content")
+                    if content is not None:
+                        # local_total.append(content)
+                        local_pieces.append(content)
+                        local_total.append(content)
+                        print(content, end="", flush=True)
+                        # print(chunk, end="", flush=True)
+                        if content in [".", ".\n", ".\n\n", ", ", ",\n", ",\n\n", "!", "! ", "!\n", "!\n\n", "?", "? ", "?\n", "?\n\n", ":", ": ", ":\n", ":\n\n", ";", "; ", ";\n", ";\n\n", "\n", "\n\n", "\n\n\n",]:
+                            sentence = "".join(local_pieces)
+                            speech_queue.append(sentence)
+                            local_pieces = []
+                    else:
                         sentence = "".join(local_pieces)
                         speech_queue.append(sentence)
                         local_pieces = []
-                else:
-                    sentence = "".join(local_pieces)
-                    speech_queue.append(sentence)
-                    local_pieces = []
+            except (openai.InvalidRequestError, openai.APIError, openai.ServiceUnavailableError, openai.APIConnectionError) as e:
+                print(f"Openai services shutdown during query, check-in later: {e}")
+                return KeyboardInterrupt
+
             assist = "".join(local_total)
             local_total = []
-
+            context_arr.append({"role": "assistant", "content": assist})
             # cost = response.usage
             # cost_display = "  ".join(
             #     [*["(" + str(k) + ") " + str(v) for k, v in cost.items()]]
