@@ -80,7 +80,7 @@ def text_to_speech():
                 for ch in ["\n", "`", "\"", "$("]:
                     if ch in sentence:
                         sentence = sentence.replace(ch, ', ')
-                if sentence is not "":
+                if sentence != "":
                     os.system(f'say \"{sentence}\"')
                 speech_queue.pop(0)
             except KeyboardInterrupt:
