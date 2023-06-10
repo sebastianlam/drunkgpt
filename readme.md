@@ -18,6 +18,7 @@ Built for MacOS, pull requests for Linux and windows compatibility welcome.
 brew install portaudio pyenv 
 # install poetry, see: https://python-poetry.org/docs/#installing-with-the-official-installer
 git clone https://github.com/sebastianlam/drunkgpt.git
+git pull
 cd drunkgpt
 poetry install
 poetry shell
