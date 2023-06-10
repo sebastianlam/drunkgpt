@@ -15,6 +15,7 @@ Built for MacOS, pull requests for Linux and windows compatibility welcome.
 ### INITIAL INSTALLATION
 
 ```sh
+brew install portaudio
 python3 -m venv chattier                    #create environment
 source chattier/bin/activate                #activate environment
 pip install poetry             #install required packages (still using pip freeze > requirements.txt)
