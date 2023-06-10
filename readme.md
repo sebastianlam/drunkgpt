@@ -41,8 +41,6 @@ make git m="<COMMIT_MESSAGE>"
 
 ### Speech recognition with **`Wisper`**
 
-### Text to speech with `py3-tts` ~~**`pyttsx3`**~~
-
 ### `JSON` Logs
 
 ### Drunk personality
