@@ -17,7 +17,9 @@ Built for MacOS, pull requests for Linux and windows compatibility welcome.
 ```sh
 python3 -m venv chattier                    #create environment
 source chattier/bin/activate                #activate environment
-pip install -r requirements.txt             #install required packages (still using pip freeze > requirements.txt)
+pip install poetry             #install required packages (still using pip freeze > requirements.txt)
+poetry lock
+poetry install
 export OPENAI_API_KEY=<YOUR_KEY>            #set YOUR OPENAI_API_KEY
 python3 main.py
 ```
