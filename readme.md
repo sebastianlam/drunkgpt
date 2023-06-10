@@ -19,7 +19,7 @@ brew install portaudio gh pyenv
 # install poetry, see: https://python-poetry.org/docs/#installing-with-the-official-installer
 gh repo clone sebastianlam/drunkgpt
 cd drunkgpt
-poetry install  #create environment
+poetry install
 poetry shell
 export OPENAI_API_KEY=<YOUR_KEY>    #REPLACE <YOUR_KEY> WITH YOUR OPENAI_API_KEY FROM https://platform.openai.com/account/api-keys
 poetry run python main.py
@@ -29,10 +29,11 @@ poetry run python main.py
 
 ```sh
 git pull
-export OPENAI_API_KEY=<YOUR_KEY>            #set YOUR OPENAI_API_KEY
+export OPENAI_API_KEY=<YOUR_KEY>    #set YOUR OPENAI_API_KEY
+poetry install
 poetry shell
 poetry run python main.py
-make git m="commit message"                 #one line commit
+make git m="<COMMIT_MESSAGE>"
 ```
 
 ## FEATURES
