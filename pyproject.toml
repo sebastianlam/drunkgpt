@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "drunkgpt"
+version = "0.1.0"
+description = ""
+authors = ["Jim Sebastian Lam <jim.sebastian.lam@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+openai = "^0.27.8"
+SpeechRecognition = "^3.10.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

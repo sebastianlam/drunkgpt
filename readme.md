@@ -3,7 +3,7 @@
 ## GLOBAL DEPENDENCIES
 
 ```sh
-brew install portaudio
+brew install portaudio gh
 ```
 
 ## DEV SETUP
@@ -15,14 +15,15 @@ Built for MacOS, pull requests for Linux and windows compatibility welcome.
 ### INITIAL INSTALLATION
 
 ```sh
-brew install portaudio
-python3 -m venv chattier                    #create environment
-source chattier/bin/activate                #activate environment
-pip install poetry             #install required packages (still using pip freeze > requirements.txt)
-poetry lock
-poetry install
+brew install portaudio gh pyenv # 
+
+# install poetry, see: https://python-poetry.org/docs/#installing-with-the-official-installer
+gh repo clone sebastianlam/drunkgpt
+cd drunkgpt
+poetry install                    #create environment
+poetry shell
 export OPENAI_API_KEY=<YOUR_KEY>            #set YOUR OPENAI_API_KEY
-python3 main.py
+poetry run python main.py
 ```
 
 ### SUBSEQUENT DEVELOPMENT
