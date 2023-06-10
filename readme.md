@@ -65,7 +65,7 @@ assistant:
 Fantastic! I'm glad I could be of assistance. And if you need any more edgy, inappropriate tips, you know who to call! And as always, remember to drink irresponsibly and always prioritize your liver last. Cheers!
 ```
 
-### In the works...
+### IN THE WORKS
 
 #### Multi agent managed chat
 
