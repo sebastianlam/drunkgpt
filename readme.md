@@ -15,14 +15,13 @@ Built for MacOS, pull requests for Linux and windows compatibility welcome.
 ### INITIAL INSTALLATION
 
 ```sh
-brew install portaudio gh pyenv # 
-
+brew install portaudio gh pyenv 
 # install poetry, see: https://python-poetry.org/docs/#installing-with-the-official-installer
 gh repo clone sebastianlam/drunkgpt
 cd drunkgpt
-poetry install                    #create environment
+poetry install  #create environment
 poetry shell
-export OPENAI_API_KEY=<YOUR_KEY>            #set YOUR OPENAI_API_KEY
+export OPENAI_API_KEY=<YOUR_KEY>    #REPLACE <YOUR_KEY> WITH YOUR OPENAI_API_KEY FROM https://platform.openai.com/account/api-keys
 poetry run python main.py
 ```
 
@@ -30,9 +29,9 @@ poetry run python main.py
 
 ```sh
 git pull
-source chattier/bin/activate                #activate environment
-pip install -r requirements.txt             #install required packages (still using pip freeze > requirements.txt)
 export OPENAI_API_KEY=<YOUR_KEY>            #set YOUR OPENAI_API_KEY
+poetry shell
+poetry run python main.py
 make git m="commit message"                 #one line commit
 ```
 
