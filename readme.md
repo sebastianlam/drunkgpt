@@ -1,22 +1,20 @@
 # CHAT SCRIPT BIOLERPLATE
 
+Tired of boring gradio interfaces? Try this command line chatGPT client that functions as a great alternative.
+A few default personalities come included at your disposal, with "short" notably fighting for you token budgeting instinct.
+Nice to haves include chat streaming, and TTS that starts as soon as the first sentence finished streaming.
+Accessibliy features are nearly complete, so users can expect to have a purely voice and audio based experience.
+
 ## GLOBAL DEPENDENCIES
 
 ```sh
-brew install portaudio gh
+brew install portaudio pyenv
+# install poetry, see: https://python-poetry.org/docs/#installing-with-the-official-installer
 ```
-
-## DEV SETUP
-
-NOTE: Early adopters will have to `pip uninstall pyttsx3`, and redo `pip install -r requirements.txt` to replace a broken package with its functional fork.
-
-Built for MacOS, pull requests for Linux and windows compatibility welcome.
 
 ### INITIAL INSTALLATION
 
 ```sh
-brew install portaudio pyenv 
-# install poetry, see: https://python-poetry.org/docs/#installing-with-the-official-installer
 git clone https://github.com/sebastianlam/drunkgpt.git
 git pull
 cd drunkgpt
@@ -69,17 +67,9 @@ assistant:
 Fantastic! I'm glad I could be of assistance. And if you need any more edgy, inappropriate tips, you know who to call! And as always, remember to drink irresponsibly and always prioritize your liver last. Cheers!
 ```
 
-### in the works
+### In the works...
 
-#### Async TTS
-
-As tokens stream into the client, after a phrase is accumulated, it will be put into a queue for a seperate TTS thread to voice it out. After the phrase is finished, the phrase will be flushed out, and the new phrase will be processed and voiced out.
-
-#### start and end tone for voice input
-
-#### multi agent chat
-
-#### api access for audited access
+#### Multi agent managed chat
 
 ```python
     import io, sys
@@ -87,7 +77,7 @@ As tokens stream into the client, after a phrase is accumulated, it will be put 
     master = {
         "parties": {
             "host": "Brian"
-            "guest": "Goop"}
+            "guests": ["Max", "Tanya"]}
         "sys": {
             "host": [
                 """
