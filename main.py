@@ -182,7 +182,11 @@ def chat_loop():
             promptio = prompting(voice_opt)
             if promptio.lower() == "new":
                 agent, context_arr = persona_input(
-                    persona_display, True, context_arr, start_time, MODEL_ID
+                    persona_display,
+                    True,
+                    context_arr,
+                    start_time,
+                    MODEL_ID
                 )
                 start_time = time_str()
                 continue
@@ -193,7 +197,9 @@ def chat_loop():
             is_block = True
             try:
                 for chunk in openai.ChatCompletion.create(
-                    model=MODEL_ID, messages=context_arr, stream=True
+                    model=MODEL_ID,
+                    messages=context_arr,
+                    stream=True
                 ):
                     content = chunk["choices"][0].get("delta", {}).get("content")
                     if content is not None:
@@ -251,7 +257,11 @@ try:
     voice_opt = speech_prompt()
     MODEL_ID = model_prompt(model_display)
     agent, context_arr = persona_input(
-        persona_display, False, context_arr, start_time, MODEL_ID
+        persona_display,
+        False,
+        context_arr,
+        start_time,
+        MODEL_ID
     )
 except KeyboardInterrupt as e:
     print(e)
