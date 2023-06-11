@@ -71,7 +71,7 @@ r.operation_timeout = 5
 speech_queue = []
 is_block = False
 def text_to_speech():
-    global running, speech_queue, is_block
+    global running, speech_queue, is_block, speech_rate
     while running:
         if len(speech_queue) > 0:
             is_block = True
@@ -81,14 +81,13 @@ def text_to_speech():
                     if ch in sentence:
                         sentence = sentence.replace(ch, ', ')
                 if sentence != "":
-                    os.system(f'say \"{sentence}\"')
+                    os.system(f'say \"{sentence}\" -r {speech_rate}')
                 speech_queue.pop(0)
             except KeyboardInterrupt:
                 print("clearing speech queue... ", end="",flush=True)
                 speech_queue = []
                 print("Done.", flush=True)
         else:
-            is_block = False
             time.sleep(0.1)
 
 
@@ -216,6 +215,7 @@ def chat_loop():
                         sentence = "".join(local_pieces)
                         speech_queue.append(sentence)
                         local_pieces = []
+                        is_block = False
             except (openai.InvalidRequestError, openai.APIError, openai.ServiceUnavailableError, openai.APIConnectionError) as e:
                 print(f"Openai services shutdown during query, check-in later: {e}")
                 return KeyboardInterrupt
@@ -255,6 +255,9 @@ try:
     context_arr = []
     start_time = time_str()
     voice_opt = speech_prompt()
+    speech_rate = input("Desired readback words per minuite (default = 200): ")
+    if speech_rate == "":
+        speech_rate = "200"
     MODEL_ID = model_prompt(model_display)
     agent, context_arr = persona_input(
         persona_display,
