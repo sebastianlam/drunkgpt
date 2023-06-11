@@ -175,7 +175,7 @@ def prompting(is_speech):
             return e
 
 def chat_loop():
-    global running, speech_queue, is_block, agent, voice_opt, MODEL_ID, voice_opt, context_arr
+    global running, speech_queue, is_block, agent, voice_opt, MODEL_ID, voice_opt, context_arr, start_time
     local_total, local_pieces = [], []
     while True:
         try:
