@@ -19,6 +19,7 @@ git clone https://github.com/sebastianlam/drunkgpt.git
 git pull
 cd drunkgpt
 poetry install
+pyenv local 3.11.3 # optinal
 poetry shell
 export OPENAI_API_KEY=<YOUR_KEY>    #REPLACE <YOUR_KEY> WITH YOUR OPENAI_API_KEY FROM https://platform.openai.com/account/api-keys
 poetry run python main.py
