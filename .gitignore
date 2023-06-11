@@ -6,3 +6,4 @@ log.json
 /.lsp
 /.vscode
 /__pycache__
+/.python-version
