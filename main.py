@@ -82,7 +82,10 @@ def text_to_speech():
                         sentence = sentence.replace(ch, ', ')
                 if sentence != "":
                     os.system(f'say \"{sentence}\" -r {speech_rate}')
-                speech_queue.pop(0)
+                try:
+                    speech_queue.pop(0)
+                except IndexError:
+                    print("clearing while empty")
             except KeyboardInterrupt:
                 print("clearing speech queue... ", end="",flush=True)
                 speech_queue = []
@@ -192,6 +195,13 @@ def chat_loop():
             if promptio.lower() == "":
                 print("Give me something mate.")
                 continue
+            if promptio.lower() == " ":
+                speech_queue = []
+                continue
+            if promptio.lower() == "quit":
+                session_log(context_arr, start_time, MODEL_ID)
+                print("\nAuf Wiedersehen!")
+                sys.exit()
             context_arr.append({"role": "user", "content": promptio})
             is_block = True
             try:
@@ -272,7 +282,7 @@ except KeyboardInterrupt as e:
 
 def main():
 
-    print("(Type \"new\" for session change)\n")
+    print("(Type:\n\"new\" for session change,\n\"quit\" to save and quit chat,\nSpace to skip speech queue.)\n")
 
     chat_thread = threading.Thread(target=chat_loop)
     chat_thread.start()
