@@ -139,7 +139,7 @@ def model_prompt(models):
 
 def persona_input(options, is_continue, context, init_time, model):
     """
-
+    Based on the loaded persona from the init steps, map numbers to the persona keys, and return the chosen option.
     """
     display = "\n".join([*["(" + str(k) + ") " + str(v) for k, v in options.items()]])
     while True:
