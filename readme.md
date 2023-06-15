@@ -7,6 +7,8 @@ Accessibliy features are nearly complete, so users can expect to have a purely v
 
 ## GLOBAL DEPENDENCIES
 
+Before you run `setup.sh`, make sure you have portaudio installed., and that you are in the environment created by poetry
+
 ```sh
 brew install portaudio pyenv
 # install poetry, see: https://python-poetry.org/docs/#installing-with-the-official-installer
