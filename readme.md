@@ -20,10 +20,15 @@ brew install portaudio pyenv
 git clone https://github.com/sebastianlam/drunkgpt.git
 git pull
 cd drunkgpt
+sh setup.sh
+
+# manual installation instructions:
 poetry install
 pyenv local 3.11.3 # optional
 poetry shell
 export OPENAI_API_KEY=<YOUR_KEY>    #REPLACE <YOUR_KEY> WITH YOUR OPENAI_API_KEY FROM https://platform.openai.com/account/api-keys
+
+# running the client:
 poetry run python main.py
 ```
 
