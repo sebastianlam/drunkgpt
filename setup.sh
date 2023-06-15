@@ -24,6 +24,8 @@ if [ -z "${OPENAI_API_KEY}" ]; then
     export OPENAI_API_KEY
 fi
 
+echo $OPENAI_API_KEY
+
 # Check for poetry
 if ! [ -x "$(command -v poetry)" ]; then
     echo 'Error: poetry is not installed.' >&2
@@ -51,6 +53,8 @@ else
     echo 'Warning: pyenv is not installed. This may cause issues.' >&2
     echo 'Visit https://github.com/pyenv/pyenv#installation for instructions on how to install pyenv.' >&2
 fi
+
+python --version
 
 # Install portaudio package on Linux or macOS
 if [ -x "$(command -v apt-get)" ]; then
