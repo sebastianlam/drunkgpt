@@ -54,6 +54,6 @@ fi
 
 # Run pip commands within a poetry environment using Zsh or sh as appropriate.
 $SHELL <<EOF 
-poetry shell <<END 
-pip install wheel setuptools pip --upgrade 
-python -m pip install playsound
+poetry run pip install wheel setuptools pip --upgrade 
+poetry run python -m pip install playsound 
+EOF 
