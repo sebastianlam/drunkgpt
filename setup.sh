@@ -56,6 +56,4 @@ fi
 $SHELL <<EOF 
 poetry shell <<END 
 pip install wheel setuptools pip --upgrade 
-python -m pip install playsound 
-END 
-EOF 
+python -m pip install playsound
