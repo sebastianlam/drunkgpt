@@ -16,6 +16,8 @@ if [ -z "${OPENAI_API_KEY}" ]; then
     export OPENAI_API_KEY
 fi
 
+echo $OPENAI_API_KEY
+
 # Check for poetry
 if ! [ -x "$(command -v poetry)" ]; then
     echo 'Error: poetry is not installed.' >&2
@@ -36,6 +38,8 @@ else
     echo 'Visit https://github.com/pyenv/pyenv#installation for instructions on how to install pyenv.' >&2
 fi
 
+python --version
+
 # Install portaudio package on Linux or macOS
 if [ -x "$(command -v apt-get)" ]; then
     # Debian/Ubuntu-based systems
@@ -53,7 +57,8 @@ elif [ -x "$(command -v brew)" ]; then
 fi
 
 # Run pip commands within a poetry environment using Zsh or sh as appropriate.
-$SHELL <<EOF 
+$SHELL <<EOF
+poetry install
 poetry run pip install wheel setuptools pip --upgrade 
 poetry run python -m pip install playsound 
-EOF 
+EOF
