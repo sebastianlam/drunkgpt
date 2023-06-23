@@ -48,14 +48,14 @@ persona_display = dict(enumerate(persona_options, 1))
 
 # OpenAI init
 openai.api_key = OPENAI_API_KEY
-try:
-    model_ls = openai.Model.list()
-except (openai.AuthenticationError, openai.PermissionError) as e:
-    print(f"Invalid key or failed auth: {e}")
-    sys.exit()
-except (openai.InvalidRequestError, openai.APIError, openai.ServiceUnavailableError, openai.APIConnectionError) as e:
-    print(f"Services unavailable, try again later: {e}")
-    sys.exit()
+# try:
+model_ls = openai.Model.list()
+# except (openai.AuthenticationError, openai.PermissionError) as e:
+#     print(f"Invalid key or failed auth: {e}")
+#     sys.exit()
+# except (openai.InvalidRequestError, openai.APIError, openai.ServiceUnavailableError, openai.APIConnectionError) as e:
+#     print(f"Services unavailable, try again later: {e}")
+#     sys.exit()
 model_names = [d["id"] for d in model_ls["data"] if "id" in d]
 gpt_options = filter(lambda string: "gpt" in string, model_names)
 model_str = list(gpt_options)
