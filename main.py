@@ -226,7 +226,7 @@ def chat_loop():
                         speech_queue.append(sentence)
                         local_pieces = []
                         is_block = False
-            except (openai.InvalidRequestError, openai.APIError, openai.ServiceUnavailableError, openai.APIConnectionError) as e:
+            except (openai.InvalidRequestError, openai.APIError) as e:
                 print(f"Openai services shutdown during query, check-in later: {e}")
                 return KeyboardInterrupt
 
