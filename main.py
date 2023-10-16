@@ -2,6 +2,13 @@ import io, os, openai, datetime, sys, json, threading, time
 import speech_recognition as sr
 from playsound import playsound
 
+# Global exception handler 
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        print(f"\nHandled!")
+        sys.exit(0)
+
+sys.excepthook = handle_exception
 
 # Thread config
 running = True
