@@ -1,7 +1,17 @@
 import io, os, openai, datetime, sys, json, threading, time
 import speech_recognition as sr
-from playsound import playsound
 
+# from playsound import playsound
+
+
+# Global exception handler
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        print(f"\nHandled!")
+        sys.exit(0)
+
+
+sys.excepthook = handle_exception
 
 # Thread config
 running = True
@@ -10,6 +20,8 @@ running = True
 # Utils
 def time_str():
     return str(datetime.datetime.utcnow())
+
+
 def startupCheck():
     if os.path.isfile(LOG_FILE) and os.access(LOG_FILE, os.R_OK):
         # checks if file exists
@@ -18,12 +30,16 @@ def startupCheck():
         print("Either file is missing or is not readable, creating file...")
         with io.open(os.path.join(".", LOG_FILE), "w") as db_file:
             db_file.write(json.dumps({"chats": []}))
+
+
 def json_log(f_name, key, data):
     with open(f_name, "r", encoding="utf-8") as jsonFile:
         old_data = json.load(jsonFile)
     old_data[key].append(data)
     with open(f_name, "w") as jsonFile:
         json.dump(old_data, jsonFile, ensure_ascii=False, indent=4)
+
+
 def session_log(context, init_time, model):
     log_content = {
         "start": init_time,
@@ -70,6 +86,8 @@ r.operation_timeout = 5
 # Speech init and functions
 speech_queue = []
 is_block = False
+
+
 def text_to_speech():
     global running, speech_queue, is_block, speech_rate
     while running:
@@ -77,17 +95,17 @@ def text_to_speech():
             is_block = True
             try:
                 sentence = speech_queue[0]
-                for ch in ["\n", "`", "\"", "$("]:
+                for ch in ["\n", "`", '"', "$("]:
                     if ch in sentence:
-                        sentence = sentence.replace(ch, ', ')
+                        sentence = sentence.replace(ch, ", ")
                 if sentence != "":
-                    os.system(f'say \"{sentence}\" -r {speech_rate}')
+                    os.system(f'say "{sentence}" -r {speech_rate}')
                 try:
                     speech_queue.pop(0)
                 except IndexError:
                     print("clearing while empty")
             except KeyboardInterrupt:
-                print("clearing speech queue... ", end="",flush=True)
+                print("clearing speech queue... ", end="", flush=True)
                 speech_queue = []
                 print("Done.", flush=True)
         else:
@@ -96,11 +114,11 @@ def text_to_speech():
 
 def transcribe():
     with sr.Microphone() as source:
-        playsound("audio/start.mp3")
+        # playsound("audio/start.mp3")
         print("Listening...")
         audio = r.listen(source, timeout=r.operation_timeout)
     try:
-        playsound("audio/end.mp3")
+        # playsound("audio/end.mp3")
         print("thinking")
         return r.recognize_whisper_api(audio, api_key=openai.api_key)
     except sr.RequestError as e:
@@ -176,6 +194,7 @@ def prompting(is_speech):
         except KeyboardInterrupt as e:
             return e
 
+
 def chat_loop():
     global running, speech_queue, is_block, agent, voice_opt, MODEL_ID, voice_opt, context_arr, start_time
     local_total, local_pieces = [], []
@@ -184,11 +203,7 @@ def chat_loop():
             promptio = prompting(voice_opt)
             if promptio.lower() == "new":
                 agent, context_arr = persona_input(
-                    persona_display,
-                    True,
-                    context_arr,
-                    start_time,
-                    MODEL_ID
+                    persona_display, True, context_arr, start_time, MODEL_ID
                 )
                 start_time = time_str()
                 continue
@@ -206,9 +221,7 @@ def chat_loop():
             is_block = True
             try:
                 for chunk in openai.ChatCompletion.create(
-                    model=MODEL_ID,
-                    messages=context_arr,
-                    stream=True
+                    model=MODEL_ID, messages=context_arr, stream=True
                 ):
                     content = chunk["choices"][0].get("delta", {}).get("content")
                     if content is not None:
@@ -217,7 +230,33 @@ def chat_loop():
                         local_total.append(content)
                         print(content, end="", flush=True)
                         # print(chunk, end="", flush=True)
-                        if content in [".", ".\n", ".\n\n", ", ", ",\n", ",\n\n", "!", "! ", "!\n", "!\n\n", "?", "? ", "?\n", "?\n\n", ":", ": ", ":\n", ":\n\n", ";", "; ", ";\n", ";\n\n", "\n", "\n\n", "\n\n\n",]:
+                        if content in [
+                            ".",
+                            ".\n",
+                            ".\n\n",
+                            ", ",
+                            ",\n",
+                            ",\n\n",
+                            "!",
+                            "! ",
+                            "!\n",
+                            "!\n\n",
+                            "?",
+                            "? ",
+                            "?\n",
+                            "?\n\n",
+                            ":",
+                            ": ",
+                            ":\n",
+                            ":\n\n",
+                            ";",
+                            "; ",
+                            ";\n",
+                            ";\n\n",
+                            "\n",
+                            "\n\n",
+                            "\n\n\n",
+                        ]:
                             sentence = "".join(local_pieces)
                             speech_queue.append(sentence)
                             local_pieces = []
@@ -238,7 +277,7 @@ def chat_loop():
             #     [*["(" + str(k) + ") " + str(v) for k, v in cost.items()]]
             # )
             # print(f"\n{agent}:\n{assist.content}\n{cost_display}\n")
-            
+
         except KeyboardInterrupt:
             assist = "".join(local_total)
             context_arr.append({"role": "assistant", "content": assist})
@@ -259,7 +298,6 @@ def chat_loop():
             continue
 
 
-
 try:
     startupCheck()
     context_arr = []
@@ -270,19 +308,17 @@ try:
         speech_rate = "200"
     MODEL_ID = model_prompt(model_display)
     agent, context_arr = persona_input(
-        persona_display,
-        False,
-        context_arr,
-        start_time,
-        MODEL_ID
+        persona_display, False, context_arr, start_time, MODEL_ID
     )
 except KeyboardInterrupt as e:
     print(e)
     sys.exit()
 
-def main():
 
-    print("(Type:\n\"new\" for session change,\n\"quit\" to save and quit chat,\nSpace to skip speech queue.)\n")
+def main():
+    print(
+        '(Type:\n"new" for session change,\n"quit" to save and quit chat,\nSpace to skip speech queue.)\n'
+    )
 
     chat_thread = threading.Thread(target=chat_loop)
     chat_thread.start()
