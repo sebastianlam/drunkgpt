@@ -1,0 +1,6 @@
+openai
+SpeechRecognition
+wheel
+setuptools
+pyaudio
+pyobjc

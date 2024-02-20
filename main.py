@@ -1,9 +1,13 @@
-import io, os, openai, datetime, sys, json, threading, time
+import io, os, datetime, sys, json, threading, time, openai, pprint
+from openai import OpenAI
+
 import speech_recognition as sr
 
 # from playsound import playsound
 
+pp = pprint.PrettyPrinter(indent=4)
 
+print("Loading...")
 # Global exception handler
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
@@ -49,11 +53,11 @@ def session_log(context, init_time, model):
     }
     json_log(LOG_FILE, "chats", log_content)
 
-
+print("Loading...")
 # Constants and configurations
 LOG_FILE = "log.json"
 PERSONAS_FILE = "personas.json"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+client_API_KEY = os.getenv("client_API_KEY")
 
 
 # Load personas
@@ -61,23 +65,33 @@ personas = json.load(open(PERSONAS_FILE, "r"))
 persona_options = list(personas.keys())
 persona_display = dict(enumerate(persona_options, 1))
 
-
-# OpenAI init
-openai.api_key = OPENAI_API_KEY
-# try:
-model_ls = openai.Model.list()
-# except (openai.AuthenticationError, openai.PermissionError) as e:
-#     print(f"Invalid key or failed auth: {e}")
-#     sys.exit()
-# except (openai.InvalidRequestError, openai.APIError, openai.ServiceUnavailableError, openai.APIConnectionError) as e:
-#     print(f"Services unavailable, try again later: {e}")
-#     sys.exit()
-model_names = [d["id"] for d in model_ls["data"] if "id" in d]
-gpt_options = filter(lambda string: "gpt" in string, model_names)
+print("Abouit to fail...")
+# client init
+client = OpenAI()
+try:
+    model_l = client.models.list()
+except (openai.AuthenticationError) as e:
+    print(f"Invalid key or failed auth: {e}")
+    sys.exit()
+except (openai.APIError, openai.APIConnectionError) as e:
+    print(f"Services unavailable, try again later: {e}")
+    sys.exit()
+print("did i walk out unscathed?")
+model_ls = []
+pp.pprint(model_l)
+for i in model_l:
+    print(i.id)
+    model_ls.append(i.id)
+pp.pprint(model_ls)
+# model_names = [d["id"] for d in model_ls["data"] if "id" in d and d is not None]
+gpt_options = filter(lambda string: "gpt" in string, model_ls)
 model_str = list(gpt_options)
 model_display = dict(enumerate(model_str, 1))
+pp.pprint(model_display)
+# sys.exit()
 
 
+print("Loading...")
 # Voice recognition init
 r = sr.Recognizer()
 r.operation_timeout = 5
@@ -87,29 +101,37 @@ r.operation_timeout = 5
 speech_queue = []
 is_block = False
 
+print("Loading...")
 
 def text_to_speech():
     global running, speech_queue, is_block, speech_rate
     while running:
-        if len(speech_queue) > 0:
-            is_block = True
-            try:
-                sentence = speech_queue[0]
-                for ch in ["\n", "`", '"', "$("]:
-                    if ch in sentence:
-                        sentence = sentence.replace(ch, ", ")
-                if sentence != "":
-                    os.system(f'say "{sentence}" -r {speech_rate}')
+        try:
+            if len(speech_queue) > 0:
+                is_block = True
                 try:
-                    speech_queue.pop(0)
-                except IndexError:
-                    print("clearing while empty")
-            except KeyboardInterrupt:
-                print("clearing speech queue... ", end="", flush=True)
-                speech_queue = []
-                print("Done.", flush=True)
-        else:
-            time.sleep(0.1)
+                    sentence = speech_queue[0]
+                    for ch in ["\n", "`", '"', "$("]:
+                        if ch in sentence:
+                            sentence = sentence.replace(ch, ", ")
+                    if sentence != "":
+                        os.system(f'say "{sentence}" -r {speech_rate}')
+                    try:
+                        speech_queue.pop(0)
+                    except IndexError:
+                        print("clearing while empty")
+                except KeyboardInterrupt:
+                    print("clearing speech queue... ", end="", flush=True)
+                    speech_queue = []
+                    print("Done.", flush=True)
+            else:
+                time.sleep(0.1)
+        except KeyboardInterrupt:
+            print("Speech queue skipped.")
+            continue
+        except Exception as e:
+            print(f"An error has occured: {e}")
+            sys.exit()
 
 
 def transcribe():
@@ -120,7 +142,10 @@ def transcribe():
     try:
         # playsound("audio/end.mp3")
         print("thinking")
-        return r.recognize_whisper_api(audio, api_key=openai.api_key)
+        # return r.recognize_whisper_api(audio, api_key=client.api_key)
+        return client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio,)
     except sr.RequestError as e:
         print("Could not request results from Whisper API")
         return e
@@ -220,10 +245,10 @@ def chat_loop():
             context_arr.append({"role": "user", "content": promptio})
             is_block = True
             try:
-                for chunk in openai.ChatCompletion.create(
+                for chunk in openai.chat.completions.create(
                     model=MODEL_ID, messages=context_arr, stream=True
                 ):
-                    content = chunk["choices"][0].get("delta", {}).get("content")
+                    content = chunk.choices[0].delta.content
                     if content is not None:
                         # local_total.append(content)
                         local_pieces.append(content)
@@ -265,8 +290,8 @@ def chat_loop():
                         speech_queue.append(sentence)
                         local_pieces = []
                         is_block = False
-            except (openai.InvalidRequestError, openai.APIError) as e:
-                print(f"Openai services shutdown during query, check-in later: {e}")
+            except (openai.APIError) as e:
+                print(f"client services shutdown during query, check-in later: {e}")
                 return KeyboardInterrupt
 
             assist = "".join(local_total)
@@ -284,6 +309,10 @@ def chat_loop():
             session_log(context_arr, start_time, MODEL_ID)
             print("\nAuf Wiedersehen!")
             sys.exit()
+        except Exception as e:
+            print(f"An error has occured: {e}")
+            sys.exit()
+            
         try:
             wait_counter = 0
             print("DEBUG: LOOP ATTEMPT")
@@ -296,26 +325,31 @@ def chat_loop():
         except KeyboardInterrupt:
             print("\nSpeech skipped.\n")
             continue
-
-
-try:
-    startupCheck()
-    context_arr = []
-    start_time = time_str()
-    voice_opt = speech_prompt()
-    speech_rate = input("Desired readback words per minuite (default = 200): ")
-    if speech_rate == "":
-        speech_rate = "200"
-    MODEL_ID = model_prompt(model_display)
-    agent, context_arr = persona_input(
-        persona_display, False, context_arr, start_time, MODEL_ID
-    )
-except KeyboardInterrupt as e:
-    print(e)
-    sys.exit()
+        except Exception as e:
+            print(f"An error has occured: {e}")
+            sys.exit()
 
 
 def main():
+    print("Welcome to the chatbot!")
+    try:
+        startupCheck()
+        context_arr = []
+        start_time = time_str()
+        # voice_opt = speech_prompt()
+        speech_rate = input("Desired readback words per minuite (default = 200): ")
+        if speech_rate == "":
+            speech_rate = "200"
+        MODEL_ID = model_prompt(model_display)
+        agent, context_arr = persona_input(
+            persona_display, False, context_arr, start_time, MODEL_ID
+        )
+    except KeyboardInterrupt as e:
+        print(e)
+        sys.exit()
+    except Exception as e:
+        print(f"An error has occured: {e}")
+        sys.exit()
     print(
         '(Type:\n"new" for session change,\n"quit" to save and quit chat,\nSpace to skip speech queue.)\n'
     )
