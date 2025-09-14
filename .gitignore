@@ -5,6 +5,6 @@ log.json
 /.clj-kondo
 /.lsp
 /.vscode
-/__pycache__
+__pycache__/
 /.python-version
 .DS_Store

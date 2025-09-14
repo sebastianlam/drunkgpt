@@ -1,7 +1,10 @@
-import io, os, datetime, sys, json, threading, time, openai, pprint
+import io, os, sys, json, time, asyncio, openai, pprint
 from openai import OpenAI
 
 import speech_recognition as sr
+from persona import load_personas, persona_display as build_persona_display
+from logging_utils import session_log, time_str
+from speech import tts_worker
 
 # from playsound import playsound
 
@@ -17,15 +20,11 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 
 sys.excepthook = handle_exception
 
-# Thread config
-running = True
+# Async speech queue populated by chat loop
+speech_queue = None
 
 
 # Utils
-def time_str():
-    return str(datetime.datetime.utcnow())
-
-
 def startupCheck():
     if os.path.isfile(LOG_FILE) and os.access(LOG_FILE, os.R_OK):
         # checks if file exists
@@ -36,22 +35,7 @@ def startupCheck():
             db_file.write(json.dumps({"chats": []}))
 
 
-def json_log(f_name, key, data):
-    with open(f_name, "r", encoding="utf-8") as jsonFile:
-        old_data = json.load(jsonFile)
-    old_data[key].append(data)
-    with open(f_name, "w") as jsonFile:
-        json.dump(old_data, jsonFile, ensure_ascii=False, indent=4)
-
-
-def session_log(context, init_time, model):
-    log_content = {
-        "start": init_time,
-        "end": time_str(),
-        "model": model,
-        "content": context,
-    }
-    json_log(LOG_FILE, "chats", log_content)
+# (Logging functions moved to logging_utils)
 
 print("Loading...")
 # Constants and configurations
@@ -61,9 +45,8 @@ client_API_KEY = os.getenv("client_API_KEY")
 
 
 # Load personas
-personas = json.load(open(PERSONAS_FILE, "r"))
-persona_options = list(personas.keys())
-persona_display = dict(enumerate(persona_options, 1))
+personas = load_personas(PERSONAS_FILE)
+persona_display = build_persona_display(personas)
 
 print("Abouit to fail...")
 # client init
@@ -97,42 +80,7 @@ r = sr.Recognizer()
 r.operation_timeout = 5
 
 
-# Speech init and functions
-speech_queue = []
-is_block = False
-
-print("Loading...")
-
-def text_to_speech():
-    global running, speech_queue, is_block, speech_rate
-    while running:
-        try:
-            if len(speech_queue) > 0:
-                is_block = True
-                try:
-                    sentence = speech_queue[0]
-                    for ch in ["\n", "`", '"', "$("]:
-                        if ch in sentence:
-                            sentence = sentence.replace(ch, ", ")
-                    if sentence != "":
-                        os.system(f'say "{sentence}" -r {speech_rate}')
-                    try:
-                        speech_queue.pop(0)
-                    except IndexError:
-                        print("clearing while empty")
-                except KeyboardInterrupt:
-                    print("clearing speech queue... ", end="", flush=True)
-                    speech_queue = []
-                    print("Done.", flush=True)
-            else:
-                time.sleep(0.1)
-        except KeyboardInterrupt:
-            print("Speech queue skipped.")
-            continue
-        except Exception as e:
-            print(f"An error has occured: {e}")
-            sys.exit()
-
+# Speech functions
 
 def transcribe():
     with sr.Microphone() as source:
@@ -195,7 +143,7 @@ def persona_input(options, is_continue, context, init_time, model):
             return e
         if choice in options:
             if is_continue:
-                session_log(context, init_time, model)
+                session_log(LOG_FILE, context, init_time, model)
             context = [{"role": "system", "content": personas[options[choice]]}]
             print(f"You have chosen {options[choice]}")
             return options[choice], context
@@ -221,7 +169,7 @@ def prompting(is_speech):
 
 
 def chat_loop():
-    global running, speech_queue, is_block, agent, voice_opt, MODEL_ID, voice_opt, context_arr, start_time
+    global speech_queue, agent, voice_opt, MODEL_ID, voice_opt, context_arr, start_time
     local_total, local_pieces = [], []
     while True:
         try:
@@ -236,14 +184,18 @@ def chat_loop():
                 print("Give me something mate.")
                 continue
             if promptio.lower() == " ":
-                speech_queue = []
+                while not speech_queue.empty():
+                    try:
+                        speech_queue.get_nowait()
+                        speech_queue.task_done()
+                    except asyncio.QueueEmpty:
+                        break
                 continue
             if promptio.lower() == "quit":
-                session_log(context_arr, start_time, MODEL_ID)
+                session_log(LOG_FILE, context_arr, start_time, MODEL_ID)
                 print("\nAuf Wiedersehen!")
                 sys.exit()
             context_arr.append({"role": "user", "content": promptio})
-            is_block = True
             try:
                 for chunk in openai.chat.completions.create(
                     model=MODEL_ID, messages=context_arr, stream=True
@@ -283,13 +235,12 @@ def chat_loop():
                             "\n\n\n",
                         ]:
                             sentence = "".join(local_pieces)
-                            speech_queue.append(sentence)
+                            speech_queue.put_nowait(sentence)
                             local_pieces = []
                     else:
                         sentence = "".join(local_pieces)
-                        speech_queue.append(sentence)
+                        speech_queue.put_nowait(sentence)
                         local_pieces = []
-                        is_block = False
             except (openai.APIError) as e:
                 print(f"client services shutdown during query, check-in later: {e}")
                 return KeyboardInterrupt
@@ -306,7 +257,7 @@ def chat_loop():
         except KeyboardInterrupt:
             assist = "".join(local_total)
             context_arr.append({"role": "assistant", "content": assist})
-            session_log(context_arr, start_time, MODEL_ID)
+            session_log(LOG_FILE, context_arr, start_time, MODEL_ID)
             print("\nAuf Wiedersehen!")
             sys.exit()
         except Exception as e:
@@ -316,7 +267,7 @@ def chat_loop():
         try:
             wait_counter = 0
             print("DEBUG: LOOP ATTEMPT")
-            while len(speech_queue) > 0 and is_block == True:
+            while not speech_queue.empty():
                 wait_counter += 1
                 print(f"{wait_counter}, ", end="", flush=True)
                 time.sleep(1)
@@ -330,39 +281,37 @@ def chat_loop():
             sys.exit()
 
 
-def main():
+async def main():
+    global speech_queue, agent, voice_opt, MODEL_ID, context_arr, start_time
     print("Welcome to the chatbot!")
     try:
         startupCheck()
         context_arr = []
         start_time = time_str()
-        # voice_opt = speech_prompt()
         speech_rate = input("Desired readback words per minuite (default = 200): ")
         if speech_rate == "":
             speech_rate = "200"
+        speech_rate = int(speech_rate)
         MODEL_ID = model_prompt(model_display)
         agent, context_arr = persona_input(
             persona_display, False, context_arr, start_time, MODEL_ID
         )
     except KeyboardInterrupt as e:
         print(e)
-        sys.exit()
+        return
     except Exception as e:
         print(f"An error has occured: {e}")
-        sys.exit()
+        return
     print(
         '(Type:\n"new" for session change,\n"quit" to save and quit chat,\nSpace to skip speech queue.)\n'
     )
 
-    chat_thread = threading.Thread(target=chat_loop)
-    chat_thread.start()
-
-    speech_thread = threading.Thread(target=text_to_speech)
-    speech_thread.start()
-
-    chat_thread.join()
-    speech_thread.join()
+    speech_queue = asyncio.Queue()
+    tts_task = asyncio.create_task(tts_worker(speech_queue, speech_rate))
+    await asyncio.to_thread(chat_loop)
+    await speech_queue.put(None)
+    await tts_task
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
