@@ -30,4 +30,5 @@ async def chat():
   async for part in await AsyncClient().chat(model='deepseek-r1:32b', messages=[message], stream=True):
     print(part['message']['content'], end='', flush=True)
 
-asyncio.run(chat())
+if __name__ == "__main__":
+    asyncio.run(chat())
