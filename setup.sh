@@ -24,8 +24,6 @@ if [ -z "${OPENAI_API_KEY}" ]; then
     export OPENAI_API_KEY
 fi
 
-echo $OPENAI_API_KEY
-
 # Check for poetry
 if ! [ -x "$(command -v poetry)" ]; then
     echo 'Error: poetry is not installed.' >&2

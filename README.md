@@ -1,17 +1,20 @@
 # DrunkGPT CLI Chatbot
 
-A terminal-based chatbot client supporting streaming responses, persona selection, and optional speech features. This project demonstrates a cross-platform text-to-speech (TTS) queue and a simple test-driven development setup.
+A terminal chatbot with streaming replies, persona selection, optional readback, and an optional local model.
 
 ## Features
-- **Persona loading** – choose predefined styles from `personas.json`.
-- **Streaming chat** – responses stream token by token.
-- **Asynchronous TTS** – `pyttsx3` worker speaks sentences as they complete.
-- **Session logging** – conversations saved to `log.json` with metadata.
-- **Unit tests** – TDD-friendly tests for personas, logging, and speech.
+
+- **Persona loading** from `personas.json`.
+- **Streaming chat** on the OpenAI Python SDK v1.
+- **Local models** through [Ollama](https://ollama.com). Pick a discovered `ollama:<name>` entry, or type one at the model prompt.
+- **Readback** of finished sentences through `pyttsx3` when that engine can start. Text chat still runs when it cannot.
+- **Dictation** through Whisper when `OPENAI_API_KEY` is set and a microphone is available.
+- **Session logging** to `log.json`.
+- **Unit tests** for personas, logging, speech, and the chat loop.
 
 ## Installation
 
-Requires Python 3.11+ and [Poetry](https://python-poetry.org/). PortAudio is needed for speech recognition.
+Requires Python 3.11+ and [Poetry](https://python-poetry.org/). PortAudio is needed only for microphone input.
 
 ```sh
 git clone https://github.com/sebastianlam/drunkgpt.git
@@ -21,28 +24,39 @@ export OPENAI_API_KEY=<your_key>
 poetry run python main.py
 ```
 
-For convenience, `setup.sh` automates dependency setup on Linux and macOS.
+Without `OPENAI_API_KEY`, the menu is limited to models Ollama is serving on localhost. You can also type a model id when nothing is discovered.
+
+`setup.sh` installs Poetry's Python dependencies and PortAudio on Linux and macOS. It reads `OPENAI_API_KEY` if you paste one, and it does not print the key.
+
+## Commands
+
+Inside a chat:
+
+- `new` saves the current session and picks another persona.
+- `quit` saves and exits.
+- A blank line is ignored.
+- A single space drops queued readback.
 
 ## Development
-
-Run the test suite before committing changes.
 
 ```sh
 pytest -q
 ```
 
-## Project Layout
+## Project layout
 
 ```
-main.py            – CLI entry point
-persona.py         – persona management helpers
-speech.py          – async TTS queue
-logging_utils.py   – session logging utilities
-personas.json      – persona definitions
-tests/             – unit tests
+main.py            CLI entry point
+chat.py            chat loop, model choice, streaming
+persona.py         persona loading
+speech.py          readback worker
+logging_utils.py   session log
+personas.json      persona definitions
+tests/             unit tests
+experiments/       standalone Ollama streaming sketch
 ```
 
-## Next Steps
+## Next steps
 
-- Expand documentation for API usage and configuration.
-- Improve cross-platform speech recognition support.
+- Microphone input still needs a working PortAudio device. The Whisper upload itself is covered without one.
+- Readback is still the operating-system voice.
