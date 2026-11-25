@@ -5,7 +5,8 @@ from typing import Any, Dict, List
 
 def time_str() -> str:
     """Return the current UTC time as a string."""
-    return str(datetime.datetime.utcnow())
+    now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    return str(now)
 
 
 def json_log(f_name: str, key: str, data: Any) -> None:
